@@ -33,7 +33,6 @@ to execute-actions
   travel-to next_stop
   drop-off-passengers
   pick-up-passengers
-  show length bus_passengers
   set-next-stop
 end
 
