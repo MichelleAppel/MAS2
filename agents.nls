@@ -48,7 +48,10 @@ to pick-up-passengers
   [
     foreach get-passengers-at-stop current_stop
     [
-      pick-up-passenger item 0 ?
+      if length bus_passengers < bus_type3_capacity
+      [
+        pick-up-passenger item 0 ?
+      ]
     ]
   ]
   

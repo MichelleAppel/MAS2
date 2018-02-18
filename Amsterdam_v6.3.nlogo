@@ -49,7 +49,7 @@ to setup
   get-daily-ridership-schedule
   update-bus-stops
   setup-costs
-  add-bus 1
+  add-bus 3
 end
 
 to calculate-average-travelling-time
@@ -244,6 +244,10 @@ to go
       update-bus-stops
       ask buses [
         execute-actions
+      ]
+      if ticks mod 10 = 0 and count turtles with [breed = buses] < 60; Every 10 ticks add a bus until there are 60
+      [
+        add-bus 3
       ]
       add-buses
     ]
