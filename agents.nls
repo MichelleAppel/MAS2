@@ -14,22 +14,23 @@ buses-own [
   ; You can create any new local variable you want. Just declare them here.
   buses_count     ; The amount of other busses that exist
   message_protocol; The variable that is going to contain the message
+  
 
 ]
  
 globals [graph]
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 to init-buses
   ; Initialize your agents here.  
 
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
   
-  set next_stop one-of item current_stop graph
+  set next_stop one-of item current_stop graph ; randomly choose first next_stop
   
   set buses_count bus_id - length graph + 1 ; Set current amount of busses
   send-initial-message ; Send message to all other existing busses to let know that new bus exists
-
 end 
 
 to execute-actions
@@ -43,7 +44,14 @@ to execute-actions
   set-next-stop
 end
 
-to send-initial-message
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Inbox ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Creates the message to be sent
+to create-message
+  set message_protocol "message" ; [bus_type bus_passengers previous_stop current_stop next_stop] ; TODO: make list of variables that will be sent, current error: "Expected a constant"
+end
+
+; Send message to other buses to let them know this bus exists
+to send-initial-message 
   let id length graph 
   while [ id < bus_id ] [
    send-message id message_protocol
@@ -55,40 +63,46 @@ end
 to read-inbox
   foreach inbox [
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is recieved 
-     set buses_count item 1 ? - length graph + 1  ; Set buses_count accordingly
+     set buses_count item 1 ? - length graph + 1  ; Updates buses_count
    ]
   ]
 end
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Route ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Set the next stop randomly to connected nodes
 to set-next-stop    
   if next_stop = -1 [
     set next_stop one-of item current_stop graph
   ]
 end
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Passenger actions (pick up/drop off) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Pick up every passenger at the stop until bus is full
 to pick-up-passengers
-  if current_stop != -1 ;currently at stop
+  if current_stop != -1 ; Check if bus is currently at a stop 
   [
     foreach get-passengers-at-stop current_stop
     [
-      if length bus_passengers < bus_type3_capacity
+      if length bus_passengers < bus_type3_capacity ; If the bus is not full
       [
-        pick-up-passenger item 0 ?
+        pick-up-passenger item 0 ? ; Pick up the passenger
       ]
     ]
   ]
   
 end
 
+; Drop off every passenger that has arrived at its destination
 to drop-off-passengers 
-  if current_stop != -1 ;currently at a stop
+  if current_stop != -1 ; Check if bus is currently at a stop 
   [
     foreach bus_passengers
     [
-      if item 1 ? = current_stop 
+      if item 1 ? = current_stop ; If a passenger is at its destination
       [
-        drop-off-passenger item 0 ?
+        drop-off-passenger item 0 ? ; Drop off
       ]
     ]
   ]
