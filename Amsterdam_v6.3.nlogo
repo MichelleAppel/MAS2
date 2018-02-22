@@ -2,7 +2,10 @@ __includes [ "agents.nls" ]
 breed [bus_stops bus_stop]
 undirected-link-breed [routes route]
 breed [buses bus]
+<<<<<<< HEAD
 
+=======
+>>>>>>> a47242f20499983baca4c4b75fc467e5d6e71ef6
 bus_stops-own [
   name
   passengers_waiting
