@@ -14,11 +14,14 @@ buses-own [
   ; You can create any new local variable you want. Just declare them here.
   buses_count     ; The amount of other busses that exist
   message_protocol; The variable that is going to contain the message
+  random-list
   
 
 ]
  
 globals [graph]
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 to init-buses
@@ -30,24 +33,26 @@ to init-buses
   set next_stop one-of item current_stop graph ; randomly choose first next_stop
   
   set buses_count bus_id - length graph + 1 ; Set current amount of busses
-  send-initial-message ; Send message to all other existing busses to let know that new bus exists
+  send-initial-message ; Send message to all other existing busses to let know that a new bus exists
 end 
 
 to execute-actions
   ; Add decision making strategies for your agents here.
   ; You are allowed to use the global variable 'ticks'.
   read-inbox
-  
   travel-to next_stop
   drop-off-passengers
   pick-up-passengers
   set-next-stop
+  show inbox
+  create-message
+  ;show message_protocol ; debug
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Inbox ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Creates the message to be sent
 to create-message
-  set message_protocol "message" ; [bus_type bus_passengers previous_stop current_stop next_stop] ; TODO: make list of variables that will be sent, current error: "Expected a constant"
+  set message_protocol (list "Bus count: " buses_count "Bus type:" bus_type "Bus passengers:" bus_passengers "Previous stop: " previous_stop "Current stop: " current_stop "Next stop: " next_stop); ; Message protocol containing all variables that need sharing, strings added temporarily for readability
 end
 
 ; Send message to other buses to let them know this bus exists
