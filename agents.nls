@@ -51,7 +51,7 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Inbox ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Creates the message to be sent
 to create-message
-  set message_protocol (list "Bus count: " buses_count "Bus type:" bus_type "Bus passengers:" bus_passengers "Previous stop: " previous_stop "Current stop: " current_stop "Next stop: " next_stop); ; Message protocol containing all variables that need sharing, strings added temporarily for readability
+  set message_protocol (list "Bus type:" bus_type "Bus passengers:" bus_passengers "Previous stop: " previous_stop "Current stop: " current_stop "Next stop: " next_stop); ; Message protocol containing all variables that need sharing, strings added temporarily for readability
 end
 
 ; Send message to other buses to let them know this bus exists
