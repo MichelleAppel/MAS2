@@ -45,6 +45,7 @@ to execute-actions
   pick-up-passengers
   set-next-stop
   show inbox
+  send-initial-message
   ;show message_protocol ; debug
 end
 
