@@ -16,8 +16,8 @@ buses-own [
   ; You can create any new local variable you want. Just declare them here.
   buses_count     ; The amount of other busses that exist
   message_protocol; The variable that is going to contain the message
-  random-list
   score_matrix    ; Matrix that contains scores for every bus stop and passenger per bus
+  buses_database
 
 ]
  
@@ -30,13 +30,15 @@ to init-buses
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
   
-  calculate-scores  
-  set-next-stop 
+
+
   
   set buses_count bus_id - length graph + 1 ; Set current amount of busses
   send-initial-message ; Send message to all other existing busses to let know that a new bus exists
+  set buses_database n-values buses_count [[]]
   
-
+  calculate-scores  
+  set-next-stop 
 end 
 
 to execute-actions
@@ -49,11 +51,12 @@ to execute-actions
   drop-off-passengers  
   pick-up-passengers
 
-
+  
   ;show inbox
+  ;show buses_database
   send-initial-message
   ;show message_protocol ; debug
-  ;show bus_passengers
+  ;show bus_passengers?end
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Inbox ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -76,9 +79,17 @@ end
 to read-inbox
   foreach inbox [
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
-     set buses_count item 1 ? - length graph + 1  ; Updates buses_count
+     set buses_count item 1 ? - length graph + 1  ; Updates buses_countn
+   ]
+
+   ifelse (item 1 ? - length graph + 1) > length(buses_database) [
+    set buses_database lput ? buses_database
+   ]
+   [
+   set buses_database replace-item (item 1 ? - length graph) buses_database ?
    ]
   ]
+  set inbox []
 end
 
 
@@ -155,7 +166,18 @@ to calculate-scores
     matrix:set score_matrix ? 0 dist-to-stop
     set passengers-at-stop (length (get-passengers-at-stop ?)) ; Amount of people that can be picked up at a stop
     matrix:set score_matrix ? 1 passengers-at-stop
-    matrix:set score_matrix ? 2 passengers-at-stop / dist-to-stop
+    
+    let stop_no ?
+    let stop_counter 0
+    foreach buses_database [
+      if length(?) > 0 [
+        if item 9 (item 2 ? ) = stop_no [
+         set stop_counter stop_counter + 1
+        ]
+      ]
+    ]
+  
+    matrix:set score_matrix ? 2 passengers-at-stop / (dist-to-stop * (stop_counter + 1))
    ]
 
     ;show "Matrix update - at a bus stop: "
