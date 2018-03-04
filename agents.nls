@@ -51,6 +51,7 @@ to execute-actions
   ;show inbox
   send-initial-message
   ;show message_protocol ; debug
+  show bus_passengers
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Inbox ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -121,18 +122,20 @@ end
 to calculate-scores   
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
  ;;;;;; Calculate for every possible next bus stop the distance
- let dist-to-stop -1  
+ let dist-to-stop -1
+ let passengers-at-stop -1  
   ifelse current_stop = -1 ; calculate distances
   [ ;not at a bus stop ****** TODO - Also include distance from current path to bus stop in the distance *******
    foreach (item next_stop graph) 
    [
-    set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
-    set dist-to-stop (precision dist-to-stop 1)    ; round off
-    matrix:set score_matrix ? 0 dist-to-stop
-    show "Matrix update: "
-    print matrix:pretty-print-text score_matrix       
+;    set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
+;    set dist-to-stop (precision dist-to-stop 1)    ; round off
+;    matrix:set score_matrix ? 0 dist-to-stop
+;    set passengers-at-stop (length (get-passengers-at-stop ?))
+;    matrix:set score_matrix ? 1 passengers-at-stop
+;    show "Matrix update - on the road: "
+;    print matrix:pretty-print-text score_matrix       
    ]    
-   ;set dist-to-stop get-distance next_stop planned_stop
   ]
   [ ;if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
    foreach (item current_stop graph) 
@@ -140,10 +143,19 @@ to calculate-scores
     set dist-to-stop get-distance current_stop ? ;calculate distance to every connected stop
     set dist-to-stop (precision dist-to-stop 1)    ; round off
     matrix:set score_matrix ? 0 dist-to-stop
-    show "Matrix update: "
+    set passengers-at-stop (length (get-passengers-at-stop ?)) ; amount of people that can be picked up at a stop
+    matrix:set score_matrix ? 1 passengers-at-stop    
+    show "Matrix update - at a bus stop: "
     print matrix:pretty-print-text score_matrix           
    ]
   ] 
+
+  
+;  if current_stop != -1 
+;  [
+;   show (word "Passengers at current stop " current_stop ": " (get-passengers-at-stop current_stop))
+;   print (length (get-passengers-at-stop current_stop))
+;  ]   
 end
 
 
@@ -155,4 +167,9 @@ end
   ;matrix:set matrix row-i col-j new-value ;fill the matrix with the score per person using this command
   ;show "Matrix update: "
   ;print matrix:pretty-print-text score_matrix  
+
+  ;if current_stop != -1 
+  ;[
+  ; show (word "Passengers at current stop " current_stop ": " (get-passengers-at-stop current_stop))    
+  ;]   
   
