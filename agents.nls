@@ -1,3 +1,5 @@
+extensions[matrix]
+
 buses-own [
   ; Static, read-only variables. These values never change. You can read them, but you cannot change them.
   bus_id          ; The ID of a given agent (bus). Each agent has a unique ID.
@@ -15,7 +17,7 @@ buses-own [
   buses_count     ; The amount of other busses that exist
   message_protocol; The variable that is going to contain the message
   random-list
-  
+  score_matrix    ; Matrix that contains scores for every bus stop and passenger per bus
 
 ]
  
@@ -34,17 +36,19 @@ to init-buses
   
   set buses_count bus_id - length graph + 1 ; Set current amount of busses
   send-initial-message ; Send message to all other existing busses to let know that a new bus exists
+  set score_matrix matrix:make-constant 25 10 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
 end 
 
 to execute-actions
   ; Add decision making strategies for your agents here.
   ; You are allowed to use the global variable 'ticks'.
   read-inbox
+  calculate-scores  
   travel-to next_stop
-  drop-off-passengers
+  drop-off-passengers  
   pick-up-passengers
   set-next-stop
-  show inbox
+  ;show inbox
   send-initial-message
   ;show message_protocol ; debug
 end
@@ -68,7 +72,7 @@ end
 ; Read the inbox
 to read-inbox
   foreach inbox [
-   if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is recieved 
+   if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
      set buses_count item 1 ? - length graph + 1  ; Updates buses_count
    ]
   ]
@@ -114,3 +118,45 @@ to drop-off-passengers
   ]
 end
 
+to calculate-scores   
+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
+ ;;;;;; Calculate for every possible next bus stop the distance
+ let dist-to-stop -1  
+  ifelse current_stop = -1 ; calculate distances
+  [ ;not at a bus stop  TODO - Also include distance from current path to bus stop in the distance
+   foreach (item next_stop graph) 
+   [
+    set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
+    set dist-to-stop (precision dist-to-stop 1)    ; round off
+    show dist-to-stop
+    matrix:set score_matrix ? 0 dist-to-stop 
+    show "Matrix update - not at a stop: "
+    print matrix:pretty-print-text score_matrix     
+   ]    
+   ;set dist-to-stop get-distance next_stop planned_stop
+  ]
+  [ ;if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
+   foreach (item current_stop graph) 
+   [
+    set dist-to-stop get-distance current_stop ? ;calculate distance to every connected stop
+    set dist-to-stop (precision dist-to-stop 1)    ; round off
+    print dist-to-stop
+    matrix:set score_matrix ? 0 dist-to-stop
+    show "Matrix update - at a stop: "
+    print matrix:pretty-print-text score_matrix     
+   ]
+  ] 
+ ;print "Distance Current stop (or next stop)-Planned_stop: "  
+ ;print dist-to-stop  
+end
+
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  ;print matrix:dimensions score_matrix ; debug - checks matrix dimensions
+  ;matrix:get matrix row-i col-j ;could be used to check scores of others, also see: matrix:get-row matrix row-i
+  ;matrix:set matrix row-i col-j new-value ;fill the matrix with the score per person using this command
+  ;show "Matrix update: "
+  ;show matrix:pretty-print-text score_matrix  
+  
