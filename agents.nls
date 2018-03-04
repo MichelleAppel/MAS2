@@ -87,10 +87,13 @@ end
 to set-next-stop    
   if next_stop = -1 [
     let score_list matrix:to-column-list score_matrix
-    show score_list
-    set next_stop position (max item 2 score_list) item 2 score_list
     
-    ;set next_stop one-of item current_stop graph ; Random
+    ifelse  (max item 2 score_list) > 0 [
+    set next_stop position (max item 2 score_list) item 2 score_list
+    ]
+    [
+    set next_stop one-of item current_stop graph ; Random
+    ]
   ]
 end
 
@@ -145,6 +148,7 @@ to calculate-scores
   ]
   [ ;if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
    set score_matrix matrix:make-constant 24 3 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
+   show item current_stop graph
    foreach (item current_stop graph) 
    [
     set dist-to-stop get-distance current_stop ? ; Calculate distance to every connected stop
@@ -160,7 +164,7 @@ to calculate-scores
   ] 
 
   
-;  if current_stop != -1 
+;  if current_stop != -1
 ;  [
 ;   show (word "Passengers at current stop " current_stop ": " (get-passengers-at-stop current_stop))
 ;   print (length (get-passengers-at-stop current_stop))
