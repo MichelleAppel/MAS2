@@ -43,11 +43,12 @@ to execute-actions
   ; Add decision making strategies for your agents here.
   ; You are allowed to use the global variable 'ticks'.
   read-inbox
-  calculate-scores  
+  calculate-scores
+  set-next-stop
   travel-to next_stop
   drop-off-passengers  
   pick-up-passengers
-  set-next-stop
+
   ;show inbox
   send-initial-message
   ;show message_protocol ; debug
@@ -125,7 +126,6 @@ end
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Calculate for every possible next bus stop the distance
 to calculate-scores
- set score_matrix matrix:make-constant 24 3 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
  let dist-to-stop -1
  let passengers-at-stop -1
   ifelse current_stop = -1 ; calculate distances
@@ -142,6 +142,7 @@ to calculate-scores
    ]    
   ]
   [ ;if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
+     set score_matrix matrix:make-constant 24 3 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
    foreach (item current_stop graph) 
    [
     set dist-to-stop get-distance current_stop ? ; Calculate distance to every connected stop
