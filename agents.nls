@@ -123,15 +123,14 @@ to calculate-scores
  ;;;;;; Calculate for every possible next bus stop the distance
  let dist-to-stop -1  
   ifelse current_stop = -1 ; calculate distances
-  [ ;not at a bus stop  TODO - Also include distance from current path to bus stop in the distance
+  [ ;not at a bus stop ****** TODO - Also include distance from current path to bus stop in the distance *******
    foreach (item next_stop graph) 
    [
     set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
     set dist-to-stop (precision dist-to-stop 1)    ; round off
-    show dist-to-stop
-    matrix:set score_matrix ? 0 dist-to-stop 
-    show "Matrix update - not at a stop: "
-    print matrix:pretty-print-text score_matrix     
+    matrix:set score_matrix ? 0 dist-to-stop
+    show "Matrix update: "
+    print matrix:pretty-print-text score_matrix       
    ]    
    ;set dist-to-stop get-distance next_stop planned_stop
   ]
@@ -140,14 +139,11 @@ to calculate-scores
    [
     set dist-to-stop get-distance current_stop ? ;calculate distance to every connected stop
     set dist-to-stop (precision dist-to-stop 1)    ; round off
-    print dist-to-stop
     matrix:set score_matrix ? 0 dist-to-stop
-    show "Matrix update - at a stop: "
-    print matrix:pretty-print-text score_matrix     
+    show "Matrix update: "
+    print matrix:pretty-print-text score_matrix           
    ]
   ] 
- ;print "Distance Current stop (or next stop)-Planned_stop: "  
- ;print dist-to-stop  
 end
 
 
@@ -158,5 +154,5 @@ end
   ;matrix:get matrix row-i col-j ;could be used to check scores of others, also see: matrix:get-row matrix row-i
   ;matrix:set matrix row-i col-j new-value ;fill the matrix with the score per person using this command
   ;show "Matrix update: "
-  ;show matrix:pretty-print-text score_matrix  
+  ;print matrix:pretty-print-text score_matrix  
   
