@@ -36,7 +36,7 @@ to init-buses
   
   set buses_count bus_id - length graph + 1 ; Set current amount of busses
   send-initial-message ; Send message to all other existing busses to let know that a new bus exists
-  set score_matrix matrix:make-constant 25 10 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
+  set score_matrix matrix:make-constant 24 2 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
 end 
 
 to execute-actions
