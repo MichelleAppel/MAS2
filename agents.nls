@@ -148,7 +148,6 @@ to calculate-scores
   ]
   [ ;if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
    set score_matrix matrix:make-constant 24 3 0   ; Create a matrix with dimensions of [25 10] (this is the highest person count in passengers-location_day1.csv) for storing scores of each group of passengers per bus stop
-   show item current_stop graph
    foreach (item current_stop graph) 
    [
     set dist-to-stop get-distance current_stop ? ; Calculate distance to every connected stop
