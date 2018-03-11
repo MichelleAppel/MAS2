@@ -49,13 +49,16 @@ to execute-actions
   
   
   read-inbox
-  calculate-scores
-  
-  show score_list
-
-  set-next-stop
-  show next_stop
-  
+  if current_stop != -1
+  [
+    calculate-scores
+    
+    ;show score_list
+    
+    set-next-stop
+    ;show next_stop
+    ;show pick_up_passenger_group
+  ]
   
   travel-to next_stop
   drop-off-passengers  
@@ -241,10 +244,11 @@ to calculate-scores
         
         let drop_off_count item stop_number passenger_group_count
         let pick_up_count counter
-        if capacity - length(bus_passengers) > counter - drop_off_count
+        if capacity - length(bus_passengers) < counter - drop_off_count
         [
           set pick_up_count capacity - length(bus_passengers) + drop_off_count
         ] 
+        show pick_up_count
         
         let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
         let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
