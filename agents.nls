@@ -53,7 +53,7 @@ to execute-actions
   [
     calculate-scores
     
-    ;show score_list
+    show score_list
     
     set-next-stop
     ;show next_stop
@@ -173,6 +173,7 @@ to calculate-scores
     [ 
       set passenger_group_count replace-item (item 1 ?) passenger_group_count (item item 1 ? passenger_group_count + 1) 
     ]
+    show passenger_group_count
     
     ; Estimated route vector r0 (weighted average of destination of passengers on board)
     let r0 ( list 0 0 ) 
@@ -248,7 +249,6 @@ to calculate-scores
         [
           set pick_up_count capacity - length(bus_passengers) + drop_off_count
         ] 
-        show pick_up_count
         
         let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
         let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
@@ -261,7 +261,7 @@ to calculate-scores
         let len_vs0s1 sqrt( (item 0 vs0s1) ^ 2 + (item 1 vs0s1) ^ 2 ) + 1
         let len_vs1r1 sqrt( (item 0 vs1r1) ^ 2 + (item 1 vs1r1) ^ 2 ) + 1
         
-        let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0s1 / len_vs0s1 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ) )
+        let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0s1 / len_vs0s1 ^ 2 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
         
         set scoresr1 lput scorer1 scoresr1
       ]
