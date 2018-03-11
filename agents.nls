@@ -184,7 +184,7 @@ end
 to calculate-scores2
   if current_stop != -1
   [
-    let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates
+    let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates s0
     
     ; Weights of the route vector
     let passenger_group_count n-values length(graph) [ 0 ]
@@ -193,18 +193,91 @@ to calculate-scores2
       set passenger_group_count replace-item (item 1 ?) passenger_group_count (item item 1 ? passenger_group_count + 1) 
     ]
     
-    
-    ; TODO r0, r1, s1
-    ; etc
-    
-    
-    
-    foreach (item current_stop graph) 
+    ; Estimated route vector r0 (weighted average of destination of passengers on board)
+    let r0 ( list 0 0 ) 
+    ifelse sum(passenger_group_count) > 0 ; If there are passengers on board
     [
-      let s1 ( list item ? xs item ? ys ) ; Next stop coordinates
+      foreach n-values length(graph) [ ? ]
+      [
+        let xw item ? xs * item ? passenger_group_count
+        let yw item ? ys * item ? passenger_group_count
+        set r0 ( list (item 0 r0 + xw) (item 1 r0 + yw) )
+      ]
+      set r0 ( list (item 0 r0 / sum(passenger_group_count) ) (item 1 r0 / sum(passenger_group_count) ) )
     ]
+    [
+      set r0 s0 ; If there are no passengers on board set the estimated route equal to the current stop
+    ]
+    
 
-    let r1 []
+    foreach (item current_stop graph) ; Get possible next stops
+    [
+      let stop_number ?
+      let s1 ( list item ? xs item ? ys ) ; Next stop coordinates s1
+      
+      ; Weights of the route vector r1
+      let passenger_group_count_s1 n-values length(graph) [ 0 ]
+          foreach get-passengers-at-stop ?
+          [ 
+            set passenger_group_count_s1 replace-item (item 1 ?) passenger_group_count_s1 (item item 1 ? passenger_group_count_s1 + 1) 
+          ]
+          
+      ; Passenger groups of s1
+      let passenger_groups []
+      foreach n-values length(graph) [ ? ]
+      [
+        if item ? passenger_group_count_s1 > 0 ; If passenger with destination ?
+        [
+          set passenger_groups lput (list (?) (item ? passenger_group_count_s1) ) passenger_groups ; Destination, count
+        ]
+      ]
+      
+      let powerset []
+      foreach passenger_groups
+      [
+        set powerset lput ( list ? ) powerset ; TODO: Make powerset of all possible passenger group combinations
+      ]
+      set powerset lput passenger_groups powerset ; Currently only single groups and all together
+      
+      foreach powerset
+      [
+        let r1 ( list 0 0 )
+        let counter 0
+        foreach ?
+        [
+          let xw item item 0 ? xs * item 1 ?
+          let yw item item 0 ? ys * item 1 ?
+          set r1 ( list (item 0 r0 + xw) (item 1 r0 + yw) )
+          set counter counter + item 1 ?
+        ]
+        ifelse counter > 0
+        [
+        set r1 ( list (item 0 r1 / counter ) (item 1 r1 / counter ) )
+        ]
+        [
+          set r1 s1
+        ]
+        
+        
+        let drop_off_count item stop_number passenger_group_count
+        let pick_up_count counter
+        
+        let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
+        let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
+        let vs1r0 ( list (item 0 r0 - item 0 s1 ) (item 1 r0 - item 1 s1 ) )
+        let vs1r1 ( list (item 0 r1 - item 0 s1 ) (item 1 r1 - item 1 s1 ) )
+        
+        let vs0s1*vs0s1 ( item 0 vs0s1 * item 0 vs0r0 ) + ( item 1 vs0s1 * item 1 vs0r0 )
+        let vs1r0*vs1r1 ( item 0 vs1r0 * item 0 vs1r1 ) + ( item 1 vs1r0 * item 1 vs1r1 )
+        
+        let len_vs0s1 sqrt( (item 0 vs0s1) ^ 2 + (item 1 vs0s1) ^ 2 ) + 1
+        let len_vs1r1 sqrt( (item 0 vs1r1) ^ 2 + (item 1 vs1r1) ^ 2 ) + 1
+        
+        let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0s1 / len_vs0s1 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ) )
+        
+        show scorer1
+      ]
+    ]
   ]
 end
 
