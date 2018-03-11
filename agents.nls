@@ -92,13 +92,20 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Route ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Set the next stop randomly to connected nodes
-to set-next-stop    
+; Set the next stop according to score
+to set-next-stop
   if next_stop = -1 [
     let score_list score_matrix
     
-    ifelse (max item 2 score_list) > 0 [show 
-      set next_position (top (max item 2 score)list) item 2 score_list ; Choose bus stop with highest score
+    
+    ifelse (max item 0 score_list) > 0 [
+      foreach score_list
+      [
+        if item 0 ? = max item 0 score_list
+        [
+          set next_stop item 1 ?
+        ]
+      ]
     ]
     [
       set next_stop one-of item current_stop graph ; Choose random connected bus stop
