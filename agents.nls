@@ -23,9 +23,9 @@ buses-own [
   buses_database
 
   ; TODO: check whether these can be local variables
-  power-set
-  new-sets
-  subset
+  ;power-set
+  ;new-sets
+  ;subset
 ]
  
 globals [graph]
@@ -33,9 +33,7 @@ globals [graph]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Initialize agents and variables  
   to init-buses
-    
-  calculate-power-set ; to show that it works
-      
+
   set-cost-per-patch
   set-bus-capacity
   
@@ -60,8 +58,6 @@ to execute-actions
   if current_stop != -1
   [
     calculate-scores
-    
-    show score_list
     
     set-next-stop
     ;show next_stop
@@ -181,8 +177,7 @@ to calculate-scores
     [ 
       set passenger_group_count replace-item (item 1 ?) passenger_group_count (item item 1 ? passenger_group_count + 1) 
     ]
-    show passenger_group_count
-    
+
     ; Estimated route vector r0 (weighted average of destination of passengers on board)
     let r0 ( list 0 0 ) 
     ifelse sum(passenger_group_count) > 0 ; If there are passengers on board
@@ -223,13 +218,9 @@ to calculate-scores
         ]
       ]
       
-      let powerset []
-      foreach passenger_groups
-      [
-        set powerset lput ( list ? ) powerset ; TODO: Make powerset of all possible passenger group combinations
-      ]
-      set powerset lput passenger_groups powerset ; Currently only single groups and all together
-      
+
+      let powerset calculate-power-set passenger_groups
+     
       let scoresr1 []
       foreach powerset
       [
@@ -249,7 +240,6 @@ to calculate-scores
         [
           set r1 s1
         ]
-        
         
         let drop_off_count item stop_number passenger_group_count
         let pick_up_count counter
@@ -287,7 +277,13 @@ to calculate-scores
       let pickup_groups []
       foreach item argmax powerset
       [
-        set pickup_groups lput item 0 ? pickup_groups
+        ifelse length(?) > 0
+        [
+          set pickup_groups lput item 0 ? pickup_groups
+        ]
+        [
+          set pickup_groups lput [] pickup_groups
+        ]
       ]
       
       set scores lput ( list maximum stop_number pickup_groups ) scores
@@ -317,19 +313,17 @@ end
 
 ; TODO: instead of three random numbers, use real data
 ; TODO: if possible, make code shorter 
-to calculate-power-set
-  let passenger-groups (list random 24 random 24 random 24) ; list of passenger groups (min: empty list, max: 24 integers)
-  write "Passenger groups"
-  show passenger-groups
-  set power-set [[]] ; init with empty list
+to-report calculate-power-set [ passenger-groups ]
+  ;let passenger-groups (list random 24 random 24 random 24) ; list of passenger groups (min: empty list, max: 24 integers)
+  let power-set [[]] ; init with empty list
   
   foreach passenger-groups ; loop through all passenger groups
   [
    let pass-group ?
-   set new-sets []
+   let new-sets []
    foreach power-set ; loop through all current power sets
    [
-     set subset ?
+     let subset ?
      ; if current power set does not contain current passenger group, add it
      if not member? pass-group subset [
         set subset lput pass-group subset
@@ -344,13 +338,11 @@ to calculate-power-set
    [
      set power-set lput ? power-set
    ]
-
   ]
   
 set power-set remove-duplicates power-set ; remove duplicates
 
-write "Power set"
-show power-set
+report power-set
 
 end
 
