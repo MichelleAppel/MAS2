@@ -22,6 +22,10 @@ buses-own [
   score_list      ; List that contains scores for every bus stop 
   buses_database
 
+  ; TODO: check whether these can be local variables
+  power-set
+  new-sets
+  subset
 ]
  
 globals [graph]
@@ -29,6 +33,9 @@ globals [graph]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Initialize agents and variables  
   to init-buses
+    
+  calculate-power-set ; to show that it works
+      
   set-cost-per-patch
   set-bus-capacity
   
@@ -41,6 +48,7 @@ globals [graph]
   
   calculate-scores ; Calculate score for connected bus stops
   set-next-stop ; Determine next bus stop (highest score)
+ 
 end 
 
 ; Add decision making strategies for your agents here.
@@ -305,6 +313,45 @@ to set-bus-capacity
   [set capacity bus_type2_capacity]
   if bus_type = 3
   [set capacity bus_type3_capacity]
+end
+
+; TODO: instead of three random numbers, use real data
+; TODO: if possible, make code shorter 
+to calculate-power-set
+  let passenger-groups (list random 24 random 24 random 24) ; list of passenger groups (min: empty list, max: 24 integers)
+  write "Passenger groups"
+  show passenger-groups
+  set power-set [[]] ; init with empty list
+  
+  foreach passenger-groups ; loop through all passenger groups
+  [
+   let pass-group ?
+   set new-sets []
+   foreach power-set ; loop through all current power sets
+   [
+     set subset ?
+     ; if current power set does not contain current passenger group, add it
+     if not member? pass-group subset [
+        set subset lput pass-group subset
+     ]
+     
+     if not member? subset new-sets [
+       set new-sets lput subset new-sets
+     ]
+   ]
+
+   foreach new-sets ; add new sets to current power set (no built-in function for 'extend')
+   [
+     set power-set lput ? power-set
+   ]
+
+  ]
+  
+set power-set remove-duplicates power-set ; remove duplicates
+
+write "Power set"
+show power-set
+
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
