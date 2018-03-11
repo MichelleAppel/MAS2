@@ -45,6 +45,7 @@ end
 to execute-actions 
   read-inbox
   calculate-scores
+  calculate-scores2
   set-next-stop
   travel-to next_stop
   drop-off-passengers  
@@ -138,7 +139,7 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Calculate for every possible next bus stop the distance
+;; Calculate for every possible next bus stop the distance
 to calculate-scores
  let dist-to-stop -1
  let passengers-at-stop -1
@@ -178,6 +179,33 @@ to calculate-scores
     matrix:set score_matrix ? 2 passengers-at-stop / (dist-to-stop * (stop_counter + 1))
    ]
   ] 
+end
+
+to calculate-scores2
+  if current_stop != -1
+  [
+    let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates
+    
+    ; Weights of the route vector
+    let passenger_group_count n-values length(graph) [ 0 ]
+    foreach bus_passengers
+    [ 
+      set passenger_group_count replace-item (item 1 ?) passenger_group_count (item item 1 ? passenger_group_count + 1) 
+    ]
+    
+    
+    ; TODO r0, r1, s1
+    ; etc
+    
+    
+    
+    foreach (item current_stop graph) 
+    [
+      let s1 ( list item ? xs item ? ys ) ; Next stop coordinates
+    ]
+
+    let r1 []
+  ]
 end
 
 
