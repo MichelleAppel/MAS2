@@ -39,7 +39,7 @@ globals [graph]
   send-initial-message ; Send message to all other existing busses to let know that a new bus exists
   set buses_database n-values buses_count [[]]
   
-  calculate-scores2 ; Calculate score for connected bus stops
+  calculate-scores ; Calculate score for connected bus stops
   set-next-stop ; Determine next bus stop (highest score)
 end 
 
@@ -47,18 +47,25 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
   
+  
   read-inbox
-  calculate-scores2
+  calculate-scores
+  
+  show score_list
+
   set-next-stop
+  show next_stop
+  
   
   travel-to next_stop
   drop-off-passengers  
   pick-up-passengers
+  
    ;show inbox
    ;show buses_database
   send-initial-message
    ;show message_protocol ; debug
-   ;show bus_passengers?end
+   ;show bus_passengers?
 end
 
 
@@ -107,6 +114,7 @@ to set-next-stop
         if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
         [
           set next_stop item 1 ?
+          set pick_up_passenger_group item 2 ?
         ]
       ]
     ]
@@ -126,7 +134,10 @@ to pick-up-passengers
     [
       if length bus_passengers < bus_type3_capacity ; If the bus is not full
       [
-        pick-up-passenger item 0 ? ; Pick up the passenger
+        if member? item 1 ? pick_up_passenger_group ; Pick up when in passenger group
+        [
+          pick-up-passenger item 0 ? ; Pick up the passenger
+        ]
       ]
     ]
   ]
@@ -148,7 +159,7 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-to calculate-scores2
+to calculate-scores
   if current_stop != -1
   [
     let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates s0
@@ -230,9 +241,9 @@ to calculate-scores2
         
         let drop_off_count item stop_number passenger_group_count
         let pick_up_count counter
-        if capacity - length(bus_passengers) > counter
+        if capacity - length(bus_passengers) > counter - drop_off_count
         [
-          set pick_up_count capacity - length(bus_passengers)
+          set pick_up_count capacity - length(bus_passengers) + drop_off_count
         ] 
         
         let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
