@@ -254,14 +254,21 @@ to calculate-scores
         let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
         let vs1r0 ( list (item 0 r0 - item 0 s1 ) (item 1 r0 - item 1 s1 ) )
         let vs1r1 ( list (item 0 r1 - item 0 s1 ) (item 1 r1 - item 1 s1 ) )
+        if pick_up_count < 1
+        [
+          set vs1r1 vs1r0
+        ]
         
-        let vs0s1*vs0s1 ( item 0 vs0s1 * item 0 vs0r0 ) + ( item 1 vs0s1 * item 1 vs0r0 )
+        
+        let vs0s1*vs0r0 ( item 0 vs0s1 * item 0 vs0r0 ) + ( item 1 vs0s1 * item 1 vs0r0 )
         let vs1r0*vs1r1 ( item 0 vs1r0 * item 0 vs1r1 ) + ( item 1 vs1r0 * item 1 vs1r1 )
         
         let len_vs0s1 sqrt( (item 0 vs0s1) ^ 2 + (item 1 vs0s1) ^ 2 ) + 1
         let len_vs1r1 sqrt( (item 0 vs1r1) ^ 2 + (item 1 vs1r1) ^ 2 ) + 1
+        let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
+        let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
         
-        let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0s1 / len_vs0s1 ^ 2 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
+        let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0r0 / len_vs0s1 ^ 2 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
         
         set scoresr1 lput scorer1 scoresr1
       ]
