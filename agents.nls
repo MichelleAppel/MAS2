@@ -43,9 +43,11 @@ end
 ; Add decision making strategies for your agents here.
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
+  
   read-inbox
   calculate-scores2
   set-next-stop
+  
   travel-to next_stop
   drop-off-passengers  
   pick-up-passengers
@@ -96,12 +98,11 @@ end
 to set-next-stop
   if next_stop = -1 [
     let score_list score_matrix
-    
-    
-    ifelse (max item 0 score_list) > 0 [
+
+    ifelse (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
       foreach score_list
       [
-        if item 0 ? = max item 0 score_list
+        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
         [
           set next_stop item 1 ?
         ]
