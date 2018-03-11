@@ -239,6 +239,7 @@ to calculate-scores2
       ]
       set powerset lput passenger_groups powerset ; Currently only single groups and all together
       
+      let scoresr1 []
       foreach powerset
       [
         let r1 ( list 0 0 )
@@ -275,8 +276,18 @@ to calculate-scores2
         
         let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0s1 / len_vs0s1 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ) )
         
-        show scorer1
+        set scoresr1 lput scorer1 scoresr1
       ]
+      
+      let maximum max scoresr1
+      let argmax position max scoresr1 scoresr1
+      
+      let pickup_groups []
+      foreach item argmax powerset
+      [
+        set pickup_groups lput item 0 ? pickup_groups
+      ]
+
     ]
   ]
 end
