@@ -5,6 +5,7 @@ buses-own [
   bus_id          ; The ID of a given agent (bus). Each agent has a unique ID.
   bus_type        ; The type of a given agent (bus). 1 means "small", 2 means "medium" and 3 means "large".
   cost_per_patch  ; The cost per patch for this bus type
+  capacity        ; The capacity of the bus
   
   ; Dynamic, read-only variables. These values may change over time. You can read them, but you cannot change them.
   inbox           ; List containing all the incoming messages (a given message is a list like this [tick sender message]).
@@ -17,7 +18,7 @@ buses-own [
   ; You can create any new local variable you want. Just declare them here.
   buses_count     ; The amount of other busses that exist
   message_protocol; The variable that is going to contain the message
-  score_matrix    ; Matrix that contains scores for every bus stop and passenger per bus
+  score_list      ; List that contains scores for every bus stop 
   buses_database
 
 ]
@@ -28,6 +29,7 @@ globals [graph]
 ; Initialize agents and variables  
   to init-buses
   set-cost-per-patch
+  set-bus-capacity
   
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
@@ -97,7 +99,6 @@ end
 ; Set the next stop according to score
 to set-next-stop
   if next_stop = -1 [
-    let score_list score_matrix
 
     ifelse (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
       foreach score_list
@@ -146,48 +147,6 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Calculate for every possible next bus stop the distance
-;to calculate-scores
-; let dist-to-stop -1
-; let passengers-at-stop -1
-;  ifelse current_stop = -1 ; calculate distances
-;  [ ; not at a bus stop ****** TODO - Also include distance from current path to bus stop in the distance *******
-;    ;foreach (item next_stop graph) 
-;    ;[
-;     ;    set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
-;     ;    set dist-to-stop (precision dist-to-stop 1)    ; round off
-;     ;    matrix:set score_matrix ? 0 dist-to-stop
-;     ;    set passengers-at-stop (length (get-passengers-at-stop ?))
-;     ;    matrix:set score_matrix ? 1 passengers-at-stop
-;     ;    show "Matrix update - on the road: "
-;     ;    print matrix:pretty-print-text score_matrix       
-;     ;]    
-;  ]
-;  [ ; if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
-;   set score_matrix matrix:make-constant 24 3 0  ; Create a matrix with dimensions of [24 3]
-;   foreach (item current_stop graph) 
-;   [
-;    set dist-to-stop get-distance current_stop ? ; Calculate distance to every connected stop
-;    set dist-to-stop (precision dist-to-stop 1)  ; Round off
-;    matrix:set score_matrix ? 0 dist-to-stop
-;    set passengers-at-stop (length (get-passengers-at-stop ?)) ; Amount of people that can be picked up at a stop
-;    matrix:set score_matrix ? 1 passengers-at-stop
-;    
-;    let stop_no ?
-;    let stop_counter 0
-;    foreach buses_database [
-;      if length(?) > 0 [
-;        if item 9 (item 2 ? ) = stop_no [
-;         set stop_counter stop_counter + 1
-;        ]
-;      ]
-;    ]
-;    ; Calculate score for bus stop
-;    matrix:set score_matrix ? 2 passengers-at-stop / (dist-to-stop * (stop_counter + 1))
-;   ]
-;  ] 
-;end
-
 to calculate-scores2
   if current_stop != -1
   [
@@ -270,6 +229,10 @@ to calculate-scores2
         
         let drop_off_count item stop_number passenger_group_count
         let pick_up_count counter
+        if capacity - length(bus_passengers) > counter
+        [
+          set pick_up_count capacity - length(bus_passengers)
+        ] 
         
         let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
         let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
@@ -298,7 +261,7 @@ to calculate-scores2
       
       set scores lput ( list maximum stop_number pickup_groups ) scores
     ]
-    set score_matrix scores
+    set score_list scores
   ]
 end
 
@@ -310,6 +273,15 @@ to set-cost-per-patch
   [set cost_per_patch bus_type2_cost_per_patch]
   if bus_type = 3
   [set cost_per_patch bus_type3_cost_per_patch]
+end
+
+to set-bus-capacity
+  if bus_type = 1
+  [set capacity bus_type1_capacity]
+  if bus_type = 2
+  [set capacity bus_type2_capacity]
+  if bus_type = 3
+  [set capacity bus_type3_capacity]
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
