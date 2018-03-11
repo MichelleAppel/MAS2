@@ -21,18 +21,15 @@ buses-own [
   message_protocol; The variable that is going to contain the message
   score_list      ; List that contains scores for every bus stop 
   buses_database
-
-  ; TODO: check whether these can be local variables
-  ;power-set
-  ;new-sets
-  ;subset
+  
+  maximum-score-busstop ; the maximum score and the next busstop, which will be sent to all buses
 ]
  
 globals [graph]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Initialize agents and variables  
-  to init-buses
+to init-buses
 
   set-cost-per-patch
   set-bus-capacity
@@ -46,6 +43,9 @@ globals [graph]
   
   calculate-scores ; Calculate score for connected bus stops
   set-next-stop ; Determine next bus stop (highest score)
+  
+  
+  set maximum-score-busstop []
  
 end 
 
@@ -53,12 +53,11 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
   
-  
   read-inbox
+
   if current_stop != -1
   [
-    calculate-scores
-    
+    calculate-scores    
     set-next-stop
     ;show next_stop
     ;show pick_up_passenger_group
@@ -68,11 +67,11 @@ to execute-actions
   drop-off-passengers  
   pick-up-passengers
   
-   ;show inbox
-   ;show buses_database
+      ;show inbox
+      ;show buses_database
   send-initial-message
-   ;show message_protocol ; debug
-   ;show bus_passengers?
+      ;show message_protocol ; debug
+      ;show bus_passengers?
 end
 
 
@@ -95,8 +94,10 @@ end
 ; Read the inbox
 to read-inbox
   foreach inbox [
+    ;show ?
+    
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
-     set buses_count item 1 ? - length graph + 1  ; Updates buses_countn
+     set buses_count item 1 ? - length graph + 1  ; Updates buses_count
    ]
 
    ifelse (item 1 ? - length graph + 1) > length(buses_database) [
@@ -167,6 +168,8 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 to calculate-scores
+  set maximum-score-busstop []
+  
   if current_stop != -1
   [
     let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates s0
@@ -273,7 +276,6 @@ to calculate-scores
       
       let maximum max scoresr1
       let argmax position max scoresr1 scoresr1
-      
       let pickup_groups []
       foreach item argmax powerset
       [
@@ -287,12 +289,26 @@ to calculate-scores
       ]
       
       set scores lput ( list maximum stop_number pickup_groups ) scores
+      
+      ; set maximum score, along with busstop and passenger group, to communicate with other buses
+      ifelse length(maximum-score-busstop) = 0
+      [
+        set maximum-score-busstop ( list maximum stop_number pickup_groups )
+      ]
+      [
+        if maximum > item 0 maximum-score-busstop
+        [
+          set maximum-score-busstop ( list maximum stop_number pickup_groups )
+          ;print "New maximum score"
+          ;show maximum-score-busstop
+        ]
+      ]
     ]
     set score_list scores
   ]
 end
 
-
+; Set the travelling cost per patch of the current bus
 to set-cost-per-patch
   if bus_type = 1
   [set cost_per_patch bus_type1_cost_per_patch]
@@ -302,6 +318,7 @@ to set-cost-per-patch
   [set cost_per_patch bus_type3_cost_per_patch]
 end
 
+; Set the passenger capacity of the current bus
 to set-bus-capacity
   if bus_type = 1
   [set capacity bus_type1_capacity]
@@ -311,24 +328,23 @@ to set-bus-capacity
   [set capacity bus_type3_capacity]
 end
 
-; TODO: instead of three random numbers, use real data
-; TODO: if possible, make code shorter 
+; Calculate the power set of a list of passenger-groups, containg integers ranging from 0-23
 to-report calculate-power-set [ passenger-groups ]
-  ;let passenger-groups (list random 24 random 24 random 24) ; list of passenger groups (min: empty list, max: 24 integers)
   let power-set [[]] ; init with empty list
   
   foreach passenger-groups ; loop through all passenger groups
   [
-   let pass-group ?
-   let new-sets []
+   let pass-group ? ; an element of passenger-group
+   let new-sets [] ; init new sets to be added to the power set
    foreach power-set ; loop through all current power sets
    [
-     let subset ?
+     let subset ? ; an element of power-set
      ; if current power set does not contain current passenger group, add it
      if not member? pass-group subset [
         set subset lput pass-group subset
      ]
      
+     ; if current (new) set does not contain current power set, add it
      if not member? subset new-sets [
        set new-sets lput subset new-sets
      ]
@@ -342,9 +358,10 @@ to-report calculate-power-set [ passenger-groups ]
   
 set power-set remove-duplicates power-set ; remove duplicates
 
-report power-set
+report power-set ; return the local variable
 
 end
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;print matrix:dimensions score_matrix ; debug - checks matrix dimensions
