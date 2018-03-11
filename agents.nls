@@ -36,7 +36,7 @@ globals [graph]
   send-initial-message ; Send message to all other existing busses to let know that a new bus exists
   set buses_database n-values buses_count [[]]
   
-  calculate-scores ; Calculate score for connected bus stops
+  calculate-scores2 ; Calculate score for connected bus stops
   set-next-stop ; Determine next bus stop (highest score)
 end 
 
@@ -44,7 +44,6 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
   read-inbox
-  calculate-scores
   calculate-scores2
   set-next-stop
   travel-to next_stop
@@ -96,10 +95,10 @@ end
 ; Set the next stop randomly to connected nodes
 to set-next-stop    
   if next_stop = -1 [
-    let score_list matrix:to-column-list score_matrix
+    let score_list score_matrix
     
-    ifelse  (max item 2 score_list) > 0 [
-      set next_stop position (max item 2 score_list) item 2 score_list ; Choose bus stop with highest score
+    ifelse (max item 2 score_list) > 0 [show 
+      set next_position (top (max item 2 score)list) item 2 score_list ; Choose bus stop with highest score
     ]
     [
       set next_stop one-of item current_stop graph ; Choose random connected bus stop
@@ -139,47 +138,47 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Calculate for every possible next bus stop the distance
-to calculate-scores
- let dist-to-stop -1
- let passengers-at-stop -1
-  ifelse current_stop = -1 ; calculate distances
-  [ ; not at a bus stop ****** TODO - Also include distance from current path to bus stop in the distance *******
-    ;foreach (item next_stop graph) 
-    ;[
-     ;    set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
-     ;    set dist-to-stop (precision dist-to-stop 1)    ; round off
-     ;    matrix:set score_matrix ? 0 dist-to-stop
-     ;    set passengers-at-stop (length (get-passengers-at-stop ?))
-     ;    matrix:set score_matrix ? 1 passengers-at-stop
-     ;    show "Matrix update - on the road: "
-     ;    print matrix:pretty-print-text score_matrix       
-     ;]    
-  ]
-  [ ; if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
-   set score_matrix matrix:make-constant 24 3 0  ; Create a matrix with dimensions of [24 3]
-   foreach (item current_stop graph) 
-   [
-    set dist-to-stop get-distance current_stop ? ; Calculate distance to every connected stop
-    set dist-to-stop (precision dist-to-stop 1)  ; Round off
-    matrix:set score_matrix ? 0 dist-to-stop
-    set passengers-at-stop (length (get-passengers-at-stop ?)) ; Amount of people that can be picked up at a stop
-    matrix:set score_matrix ? 1 passengers-at-stop
-    
-    let stop_no ?
-    let stop_counter 0
-    foreach buses_database [
-      if length(?) > 0 [
-        if item 9 (item 2 ? ) = stop_no [
-         set stop_counter stop_counter + 1
-        ]
-      ]
-    ]
-    ; Calculate score for bus stop
-    matrix:set score_matrix ? 2 passengers-at-stop / (dist-to-stop * (stop_counter + 1))
-   ]
-  ] 
-end
+;;; Calculate for every possible next bus stop the distance
+;to calculate-scores
+; let dist-to-stop -1
+; let passengers-at-stop -1
+;  ifelse current_stop = -1 ; calculate distances
+;  [ ; not at a bus stop ****** TODO - Also include distance from current path to bus stop in the distance *******
+;    ;foreach (item next_stop graph) 
+;    ;[
+;     ;    set dist-to-stop get-distance next_stop ? ;calculate distance to every connected stop
+;     ;    set dist-to-stop (precision dist-to-stop 1)    ; round off
+;     ;    matrix:set score_matrix ? 0 dist-to-stop
+;     ;    set passengers-at-stop (length (get-passengers-at-stop ?))
+;     ;    matrix:set score_matrix ? 1 passengers-at-stop
+;     ;    show "Matrix update - on the road: "
+;     ;    print matrix:pretty-print-text score_matrix       
+;     ;]    
+;  ]
+;  [ ; if at a bus stop, check for every connected bus stop what's the distance between current stop and connected stops and update matrix
+;   set score_matrix matrix:make-constant 24 3 0  ; Create a matrix with dimensions of [24 3]
+;   foreach (item current_stop graph) 
+;   [
+;    set dist-to-stop get-distance current_stop ? ; Calculate distance to every connected stop
+;    set dist-to-stop (precision dist-to-stop 1)  ; Round off
+;    matrix:set score_matrix ? 0 dist-to-stop
+;    set passengers-at-stop (length (get-passengers-at-stop ?)) ; Amount of people that can be picked up at a stop
+;    matrix:set score_matrix ? 1 passengers-at-stop
+;    
+;    let stop_no ?
+;    let stop_counter 0
+;    foreach buses_database [
+;      if length(?) > 0 [
+;        if item 9 (item 2 ? ) = stop_no [
+;         set stop_counter stop_counter + 1
+;        ]
+;      ]
+;    ]
+;    ; Calculate score for bus stop
+;    matrix:set score_matrix ? 2 passengers-at-stop / (dist-to-stop * (stop_counter + 1))
+;   ]
+;  ] 
+;end
 
 to calculate-scores2
   if current_stop != -1
@@ -209,6 +208,7 @@ to calculate-scores2
       set r0 s0 ; If there are no passengers on board set the estimated route equal to the current stop
     ]
     
+    let scores []
 
     foreach (item current_stop graph) ; Get possible next stops
     [
@@ -287,8 +287,10 @@ to calculate-scores2
       [
         set pickup_groups lput item 0 ? pickup_groups
       ]
-
+      
+      set scores lput ( list maximum stop_number pickup_groups ) scores
     ]
+    set score_matrix scores
   ]
 end
 
