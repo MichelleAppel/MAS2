@@ -56,7 +56,7 @@ end
 ; Add decision making strategies for your agents here.
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
-  
+  show inbox
   read-inbox
 
   if current_stop != -1
@@ -72,8 +72,8 @@ to execute-actions
   travel-to next_stop
   drop-off-passengers  
   pick-up-passengers
-  
-      ;show inbox
+
+
       ;show buses_database
   send-initial-message
       ;show message_protocol ; debug
@@ -100,13 +100,21 @@ end
 ; Read the inbox
 to read-inbox
   foreach inbox [
-    ;show ?
+    
    if member? "request" item 2 ? [
+     show "I received a request!"
      let templist(item 2 ?)
-     show item 1 item 1 templist ; extract the bus stop needed to calculate the scores for
-     ; todo calculate scores for specific bus stop
-     ; todo send back scores to requester bus
-     
+     ;show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
+     ; todo calculate scores for specific bus stop     
+     let requested-score (list 3.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)
+     ;show "requested-score: "
+     ;show requested-score
+     show templist
+     if (item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
+       send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score, todo: if the score is higher
+       show "Sent a message back to bus#: "
+       show (item 1 ?)
+       ]     
      ]
    
 
