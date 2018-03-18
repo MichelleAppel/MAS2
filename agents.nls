@@ -23,6 +23,9 @@ buses-own [
   buses_database
   
   maximum-score-busstop ; the maximum score and the next busstop, which will be sent to all buses
+  
+  tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip
+  tree-group     ;
 ]
  
 globals [graph]
@@ -221,74 +224,99 @@ to calculate-scores
         ]
       ]
       
-
-      let powerset calculate-power-set passenger_groups
-     
       let scoresr1 []
-      foreach powerset
+      let powerset []  
+       
+       
+      ifelse length passenger_groups < 10 ; Pick acceptable treshold
       [
-        let r1 ( list 0 0 )
-        let counter 0
-        foreach ?
+        set powerset calculate-power-set passenger_groups
+
+        foreach powerset
         [
-          let xw item item 0 ? xs * item 1 ?
-          let yw item item 0 ? ys * item 1 ?
-          set r1 ( list (item 0 r0 + xw) (item 1 r0 + yw) )
-          set counter counter + item 1 ?
-        ]
-        ifelse counter > 0
-        [
-        set r1 ( list (item 0 r1 / counter ) (item 1 r1 / counter ) )
-        ]
-        [
-          set r1 s1
-        ]
-        
-        let drop_off_count item stop_number passenger_group_count
-        let pick_up_count counter
-        if capacity - length(bus_passengers) < counter - drop_off_count
-        [
-          set pick_up_count capacity - length(bus_passengers) + drop_off_count
-        ] 
-        
-        let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
-        let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
-        let vs1r0 ( list (item 0 r0 - item 0 s1 ) (item 1 r0 - item 1 s1 ) )
-        let vs1r1 ( list (item 0 r1 - item 0 s1 ) (item 1 r1 - item 1 s1 ) )
-        if pick_up_count < 1
-        [
-          set vs1r1 vs1r0
-        ]
-        
-        
-        let vs0s1*vs0r0 ( item 0 vs0s1 * item 0 vs0r0 ) + ( item 1 vs0s1 * item 1 vs0r0 )
-        let vs1r0*vs1r1 ( item 0 vs1r0 * item 0 vs1r1 ) + ( item 1 vs1r0 * item 1 vs1r1 )
-        
-        let len_vs0s1 sqrt( (item 0 vs0s1) ^ 2 + (item 1 vs0s1) ^ 2 ) + 1
-        let len_vs1r1 sqrt( (item 0 vs1r1) ^ 2 + (item 1 vs1r1) ^ 2 ) + 1
-        let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
-        let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
-        
-        let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp(vs0s1*vs0r0 / len_vs0s1 ^ 2 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp(vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
-        
-        set scoresr1 lput scorer1 scoresr1
-      ]
-      
-      let maximum max scoresr1
-      let argmax position max scoresr1 scoresr1
-      let pickup_groups []
-      foreach item argmax powerset
-      [
-        ifelse length(?) > 0
-        [
-          set pickup_groups lput item 0 ? pickup_groups
-        ]
-        [
-          set pickup_groups lput [] pickup_groups
+          let r1 ( list 0 0 )
+          let counter 0
+          foreach ?
+          [
+            let xw item item 0 ? xs * item 1 ?
+            let yw item item 0 ? ys * item 1 ?
+            set r1 ( list ( item 0 r0 + xw ) ( item 1 r0 + yw ) )
+            set counter counter + item 1 ?
+          ]
+          ifelse counter > 0
+          [
+            set r1 ( list ( item 0 r1 / counter ) ( item 1 r1 / counter ) )
+          ]
+          [
+            set r1 s1
+          ]
+          
+          let drop_off_count item stop_number passenger_group_count
+          let pick_up_count counter
+          if capacity - length(bus_passengers) < counter - drop_off_count
+          [
+            set pick_up_count capacity - length(bus_passengers) + drop_off_count
+          ] 
+          
+          let vs0s1 ( list ( item 0 s1 - item 0 s0 ) ( item 1 s1 - item 1 s0 ) )
+          let vs0r0 ( list ( item 0 r0 - item 0 s0 ) ( item 1 r0 - item 1 s0 ) )
+          let vs1r0 ( list ( item 0 r0 - item 0 s1 ) ( item 1 r0 - item 1 s1 ) )
+          let vs1r1 ( list ( item 0 r1 - item 0 s1 ) ( item 1 r1 - item 1 s1 ) )
+          if pick_up_count < 1
+          [
+            set vs1r1 vs1r0
+          ]
+          
+          
+          let vs0s1*vs0r0 ( item 0 vs0s1 * item 0 vs0r0 ) + ( item 1 vs0s1 * item 1 vs0r0 )
+          let vs1r0*vs1r1 ( item 0 vs1r0 * item 0 vs1r1 ) + ( item 1 vs1r0 * item 1 vs1r1 )
+          
+          let len_vs0s1 sqrt( (item 0 vs0s1) ^ 2 + (item 1 vs0s1) ^ 2 ) + 1
+          let len_vs1r1 sqrt( (item 0 vs1r1) ^ 2 + (item 1 vs1r1) ^ 2 ) + 1
+          let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
+          let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
+          
+          let scorer1 ( 1 / cost_per_patch ) * ( 1 + drop_off_count ) * ln( 1 + exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
+          
+          set scoresr1 lput scorer1 scoresr1
         ]
       ]
+      [ ; If more then 10 passenger groups
+        show length passenger_groups
+        
+        let single_groups []
+        
+        foreach passenger_groups
+        [
+          set single_groups lput ( list ? ) single_groups
+        ]
+
+        score-tree-search single_groups stop_number
+        show tree-score
+        show tree-group
+        
+        set scoresr1 lput item 0 tree-score scoresr1
+        set powerset tree-group
+      ]
       
-      set scores lput ( list maximum stop_number pickup_groups ) scores
+
+        let maximum max scoresr1
+        let argmax position max scoresr1 scoresr1
+        let pickup_groups []
+        
+        foreach item argmax powerset
+        [
+          ifelse length(?) > 0
+          [
+            set pickup_groups lput item 0 ? pickup_groups
+          ]
+          [
+            set pickup_groups lput [] pickup_groups
+          ]
+        ]
+        set scores lput ( list maximum stop_number pickup_groups ) scores
+      
+
       
       ; set maximum score, along with busstop and passenger group, to communicate with other buses
       ifelse length(maximum-score-busstop) = 0
@@ -307,6 +335,8 @@ to calculate-scores
     set score_list scores
   ]
 end
+
+
 
 ; Set the travelling cost per patch of the current bus
 to set-cost-per-patch
@@ -357,11 +387,125 @@ to-report calculate-power-set [ passenger-groups ]
   ]
   
 set power-set remove-duplicates power-set ; remove duplicates
-
 report power-set ; return the local variable
-
 end
 
+
+
+to score-tree-search [ passenger_groups stop_number ]
+  let scoresr1 []
+  
+  ifelse length passenger_groups > 1
+  [
+    foreach passenger_groups
+    [
+      let scorer1 score (list ?) stop_number
+      set scoresr1 lput item 0 scorer1 scoresr1
+    ]  
+    
+    let maximum_group item position max scoresr1 scoresr1 passenger_groups
+    
+    set passenger_groups remove-item position maximum_group passenger_groups passenger_groups
+    
+    foreach passenger_groups
+    [
+      set passenger_groups replace-item position ? passenger_groups passenger_groups lput item 0 maximum_group ?
+    ]
+    
+    score-tree-search passenger_groups stop_number
+  ]
+  [
+  set tree-score score passenger_groups stop_number
+  set tree-group passenger_groups
+  ]
+end
+
+
+to-report score [ passenger_groups stop_number ]
+  let scoresr1 []
+  if current_stop != -1
+  [
+    let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates s0
+    
+    ; Weights of the route vector
+    let passenger_group_count n-values length(graph) [ 0 ]
+    foreach bus_passengers
+    [ 
+      set passenger_group_count replace-item (item 1 ?) passenger_group_count (item item 1 ? passenger_group_count + 1) 
+    ]
+
+    ; Estimated route vector r0 (weighted average of destination of passengers on board)
+    let r0 ( list 0 0 ) 
+    ifelse sum(passenger_group_count) > 0 ; If there are passengers on board
+    [
+      foreach n-values length(graph) [ ? ]
+      [
+        let xw item ? xs * item ? passenger_group_count
+        let yw item ? ys * item ? passenger_group_count
+        set r0 ( list (item 0 r0 + xw) (item 1 r0 + yw) )
+      ]
+      set r0 ( list (item 0 r0 / sum(passenger_group_count) ) (item 1 r0 / sum(passenger_group_count) ) )
+    ]
+    [
+      set r0 s0 ; If there are no passengers on board set the estimated route equal to the current stop
+    ]
+    
+    let scores []
+
+    let s1 ( list item stop_number xs item stop_number ys ) ; Next stop coordinates s1
+    
+
+    foreach passenger_groups
+    [
+      let r1 ( list 0 0 )
+      let counter 0
+      foreach ?
+      [
+        let xw item item 0 ? xs * item 1 ?
+        let yw item item 0 ? ys * item 1 ?
+        set r1 ( list (item 0 r0 + xw) (item 1 r0 + yw) )
+        set counter counter + item 1 ?
+      ]
+      ifelse counter > 0
+      [
+      set r1 ( list (item 0 r1 / counter ) (item 1 r1 / counter ) )
+      ]
+      [
+        set r1 s1
+      ]
+      
+      let drop_off_count item stop_number passenger_group_count
+      let pick_up_count counter
+      if capacity - length(bus_passengers) < counter - drop_off_count
+      [
+        set pick_up_count capacity - length(bus_passengers) + drop_off_count
+      ] 
+      
+      let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
+      let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
+      let vs1r0 ( list (item 0 r0 - item 0 s1 ) (item 1 r0 - item 1 s1 ) )
+      let vs1r1 ( list (item 0 r1 - item 0 s1 ) (item 1 r1 - item 1 s1 ) )
+      if pick_up_count < 1
+      [
+        set vs1r1 vs1r0
+      ]
+      
+      
+      let vs0s1*vs0r0 ( item 0 vs0s1 * item 0 vs0r0 ) + ( item 1 vs0s1 * item 1 vs0r0 )
+      let vs1r0*vs1r1 ( item 0 vs1r0 * item 0 vs1r1 ) + ( item 1 vs1r0 * item 1 vs1r1 )
+      
+      let len_vs0s1 sqrt( (item 0 vs0s1) ^ 2 + (item 1 vs0s1) ^ 2 ) + 1
+      let len_vs1r1 sqrt( (item 0 vs1r1) ^ 2 + (item 1 vs1r1) ^ 2 ) + 1
+      let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
+      let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
+      
+      let scorer1 (1 / cost_per_patch) * ( 1 + drop_off_count ) * ln( 1 + exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) ) + ( 1 + pick_up_count ) * ln( 1 + exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
+      
+      set scoresr1 lput scorer1 scoresr1
+    ]
+  ]
+  report scoresr1
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;print matrix:dimensions score_matrix ; debug - checks matrix dimensions
