@@ -281,8 +281,8 @@ to calculate-scores
           set scoresr1 lput scorer1 scoresr1
         ]
       ]
-      [ ; If more then 10 passenger groups
-        show length passenger_groups
+      [ ; If more then 10 passenger groups        
+        set tree-score 0
         
         let single_groups []
         
@@ -292,11 +292,9 @@ to calculate-scores
         ]
 
         score-tree-search single_groups stop_number
-        show tree-score
-        show tree-group
         
-        set scoresr1 lput item 0 tree-score scoresr1
-        set powerset tree-group
+        set scoresr1 lput tree-score scoresr1
+        set powerset ( list tree-group )
       ]
       
 
@@ -395,7 +393,7 @@ end
 to score-tree-search [ passenger_groups stop_number ]
   let scoresr1 []
   
-  ifelse length passenger_groups > 1
+  if length passenger_groups > 1
   [
     foreach passenger_groups
     [
@@ -412,11 +410,15 @@ to score-tree-search [ passenger_groups stop_number ]
       set passenger_groups replace-item position ? passenger_groups passenger_groups lput item 0 maximum_group ?
     ]
     
+     let scoreg1 score passenger_groups stop_number 
+
+     if max scoreg1 > tree-score
+     [
+       set tree-score max scoreg1
+       set tree-group item position max scoreg1 scoreg1 passenger_groups
+     ]
+ 
     score-tree-search passenger_groups stop_number
-  ]
-  [
-  set tree-score score passenger_groups stop_number
-  set tree-group passenger_groups
   ]
 end
 
