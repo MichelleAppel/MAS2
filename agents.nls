@@ -21,20 +21,12 @@ buses-own [
   message_protocol; The variable that is going to contain the message
   score_list      ; List that contains scores for every bus stop 
   buses_database
-<<<<<<< HEAD
   max_score
-  
-  ; TODO: check whether these can be local variables
-  ;power-set
-  ;new-sets
-  ;subset
-=======
   
   maximum-score-busstop ; the maximum score and the next busstop, which will be sent to all buses
   
   tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip
   tree-group     ;
->>>>>>> 02fe5c12f84bbafebb8e6a8a4049e927b0e907ba
 ]
  
 globals [graph]
@@ -65,35 +57,24 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
   
-<<<<<<< HEAD
-  ;show inbox
-=======
->>>>>>> 02fe5c12f84bbafebb8e6a8a4049e927b0e907ba
   read-inbox
 
   if current_stop != -1
   [
-<<<<<<< HEAD
     calculate-scores
-    request-score
-=======
-    calculate-scores    
->>>>>>> 02fe5c12f84bbafebb8e6a8a4049e927b0e907ba
+    request-score    
     set-next-stop
     ;show next_stop
     ;show pick_up_passenger_group
     ;show score_list
   ]
+  
   travel-to next_stop
   drop-off-passengers  
   pick-up-passengers
-<<<<<<< HEAD
-  ;show buses_database
-=======
   
       ;show inbox
       ;show buses_database
->>>>>>> 02fe5c12f84bbafebb8e6a8a4049e927b0e907ba
   send-initial-message
       ;show message_protocol ; debug
       ;show bus_passengers?
@@ -119,7 +100,7 @@ end
 ; Read the inbox
 to read-inbox
   foreach inbox [
-<<<<<<< HEAD
+    ;show ?
    if member? "request" item 2 ? [
      
      show "Spotted a request, calculate scores for: "
@@ -136,10 +117,7 @@ to read-inbox
      
      ]
    
-=======
-    ;show ?
-    
->>>>>>> 02fe5c12f84bbafebb8e6a8a4049e927b0e907ba
+
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
      set buses_count item 1 ? - length graph + 1  ; Updates buses_count
    ]
@@ -384,7 +362,6 @@ to calculate-scores
       ]
     ]
     set score_list scores
-    ;show score_list
   ]
 end
 
