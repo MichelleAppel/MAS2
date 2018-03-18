@@ -102,16 +102,8 @@ to read-inbox
   foreach inbox [
     ;show ?
    if member? "request" item 2 ? [
-     
-     show "Spotted a request, calculate scores for: "
-     show item 2 ? 
-     show "templist: "
      let templist(item 2 ?)
-     show "item 1 item 2 templist: "
      show item 1 item 1 templist ; extract the bus stop needed to calculate the scores for
-     set templist (replace-item 1 templist (replace-item 1 (item 1 templist) 9))
-     show "new templist: "
-     show templist
      ; todo calculate scores for specific bus stop
      ; todo send back scores to requester bus
      
