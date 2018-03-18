@@ -21,7 +21,8 @@ buses-own [
   message_protocol; The variable that is going to contain the message
   score_list      ; List that contains scores for every bus stop 
   buses_database
-
+  max_score
+  
   ; TODO: check whether these can be local variables
   ;power-set
   ;new-sets
@@ -53,23 +54,21 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
   
-  
+  ;show inbox
   read-inbox
   if current_stop != -1
   [
     calculate-scores
-    
+    request-score
     set-next-stop
     ;show next_stop
     ;show pick_up_passenger_group
+    ;show score_list
   ]
-  
   travel-to next_stop
   drop-off-passengers  
   pick-up-passengers
-  
-   ;show inbox
-   ;show buses_database
+  ;show buses_database
   send-initial-message
    ;show message_protocol ; debug
    ;show bus_passengers?
@@ -95,6 +94,22 @@ end
 ; Read the inbox
 to read-inbox
   foreach inbox [
+   if member? "request" item 2 ? [
+     
+     show "Spotted a request, calculate scores for: "
+     show item 2 ? 
+     show "templist: "
+     let templist(item 2 ?)
+     show "item 1 item 2 templist: "
+     show item 1 item 1 templist ; extract the bus stop needed to calculate the scores for
+     set templist (replace-item 1 templist (replace-item 1 (item 1 templist) 9))
+     show "new templist: "
+     show templist
+     ; todo calculate scores for specific bus stop
+     ; todo send back scores to requester bus
+     
+     ]
+   
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
      set buses_count item 1 ? - length graph + 1  ; Updates buses_countn
    ]
@@ -109,6 +124,17 @@ to read-inbox
   set inbox []
 end
 
+to request-score
+  let id 0
+  while [ id < buses_count ] [    
+    if (id + length graph) != bus_id [
+      send-message (id + length graph) (list "request" max_score)
+      show (list "request" max_score)
+      ] ; 1 to filter the message in inbox, only send to other buses
+    set id id + 1
+   
+  ]  
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Route ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Set the next stop according to score
@@ -120,6 +146,7 @@ to set-next-stop
       [
         if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
         [
+          set max_score(list item 0 ? item 1 ? item 2 ?)
           set next_stop item 1 ?
           set pick_up_passenger_group item 2 ?
         ]
@@ -289,6 +316,7 @@ to calculate-scores
       set scores lput ( list maximum stop_number pickup_groups ) scores
     ]
     set score_list scores
+    ;show score_list
   ]
 end
 
