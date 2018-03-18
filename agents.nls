@@ -22,7 +22,7 @@ buses-own [
   score_list      ; List that contains scores for every bus stop 
   buses_database
   max_score
-  
+  wait-counter     ; simple shared tick counter used between functions
   maximum-score-busstop ; the maximum score and the next busstop, which will be sent to all buses
   
   tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip
@@ -68,8 +68,9 @@ to execute-actions
     ;show pick_up_passenger_group
     ;show score_list
   ]
-  
-  travel-to next_stop
+
+
+  travel-to next_stop 
   drop-off-passengers  
   pick-up-passengers
 
@@ -102,7 +103,7 @@ to read-inbox
   foreach inbox [
     
    if member? "request" item 2 ? [
-     show "I received a request!"
+     show "I received a score request!"
      let templist(item 2 ?)
      ;show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
      ; todo calculate scores for specific bus stop     
@@ -138,15 +139,16 @@ to request-score
     if (id + length graph) != bus_id [
       send-message (id + length graph) (list "request" max_score)
       show (list "request" max_score)
-      ] ; 1 to filter the message in inbox, only send to other buses
-    set id id + 1
-   
+      set wait-counter 5 ; Set a wait counter 
+      ]
+    set id id + 1   
   ]  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Route ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Set the next stop according to score
 to set-next-stop
+  
   if next_stop = -1 [
 
     ifelse (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
@@ -165,6 +167,7 @@ to set-next-stop
     ]
   ]
 end
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Passenger actions (pick up/drop off) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
