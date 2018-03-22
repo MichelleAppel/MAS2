@@ -181,7 +181,7 @@ to request-score
       if (id + length graph) != bus_id [
         send-message (id + length graph) (list "request" max_score)
         show (list "request" max_score)
-        set wait_counter 3 ; Set a wait counter 
+        set wait_counter 1 ; Set a wait counter 
         ]
       set id id + 1   
     ]
