@@ -202,8 +202,6 @@ to set-next-stop
            set max_score(list item 0 ? item 1 ? item 2 ?)
            set next_stop item 1 ?
            set pick_up_passenger_group item 2 ?
-           write "pick_up_passenger_group"
-           show pick_up_passenger_group
          ]
        ]
      ]
@@ -212,19 +210,21 @@ to set-next-stop
      ]
    ]
    [
-     show "I should go for my second choice"
-     show "Max n-values"
-     show max n-values length(score_list) [item 0 item ? score_list]
-     show "N-values list"
-     show n-values length(score_list) [item 0 item ? score_list]
+     show "Other bus with higher score detected, going for second choice"
      foreach score_list
      [
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
        [
-         ;set score_list remove (item 0 ?) score_list ; Remove the item from the list - ERROR: Expected list of size X, not size X-1
-         ;set score_list replace-item (item 0 ?) score_list 0 ; OR Replace the max score with a lower score - NOT WORKING YET                  
-         show "new score_list: "
-         show n-values length(score_list) [item 0 item ? score_list]
+         let pos position (item 0 ?) map first score_list
+         let temp_list remove-item pos score_list ;remove-item index list replace 0 with location of MAX  (item 0 ?) = VALUE of max.
+         foreach temp_list
+         [
+          if item 0 ? = max n-values length(temp_list) [item 0 item ? temp_list]
+          [
+            set next_stop item 1 ? 
+            set pick_up_passenger_group item 2 ?
+          ] 
+         ]
        ]
      ]                         
    ]
