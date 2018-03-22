@@ -200,7 +200,7 @@ to set-next-stop
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
        [
          ;set score_list remove (item 0 ?) score_list ; Remove the item from the list - ERROR: Expected list of size X, not size X-1
-         set score_list replace-item (item 0 ?) score_list 0 ; OR Replace the max score with a lower score - NOT WORKING YET                  
+         ;set score_list replace-item (item 0 ?) score_list 0 ; OR Replace the max score with a lower score - NOT WORKING YET                  
          show "new score_list: "
          show n-values length(score_list) [item 0 item ? score_list]
        ]
@@ -586,6 +586,23 @@ to-report score [ passenger_groups stop_number ]
     ]
   ]
   report scoresr1
+end
+
+; find the corresponding passenger ids of a given list of passenger groups to be claimed 
+to-report claim-passenger-ids [ busstop claim_passenger_groups ]
+  let passenger-ids [] ; init
+  let busstop_passengers get-passengers-at-stop busstop ; returns a list of tuples of the form [passenger_id bus_stop]
+  foreach busstop_passengers ; loop through passengers at busstop
+  [
+    let passenger_id item 0 ?
+    let destination item 1 ?
+    if member? destination claim_passenger_groups ; if destination == claimed group, add passenger_id to list
+    [
+      set passenger-ids lput passenger_id passenger-ids
+    ]
+  ]
+  
+  report passenger-ids ; list of passenger ids corresponding to claimed groups
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
