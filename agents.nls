@@ -28,6 +28,8 @@ buses-own [
   
   tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip
   tree-group     ;
+  
+  claimed_passengers ; list of claimed passenger_ids
 ]
  
 globals [graph]
@@ -52,13 +54,14 @@ to init-buses
   set-next-stop ; Determine next bus stop (highest score)
   
   set maximum-score-busstop []
+  
+  set claimed_passengers []
  
 end 
 
 ; Add decision making strategies for your agents here.
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
-  show inbox
   read-inbox
   
   ifelse wait_counter > 0 
@@ -73,6 +76,7 @@ to execute-actions
      calculate-scores
      request-score
      set-next-stop
+     communicate-claim
      ;show next_stop
      ;show pick_up_passenger_group
      ;show score_list
@@ -86,6 +90,12 @@ to execute-actions
   send-initial-message
       ;show message_protocol ; debug
       ;show bus_passengers?
+      
+      
+  write "BUS_ID"
+  show bus_id
+  write "CLAIM_LIST"
+  show claimed_passengers
     
 end
 
@@ -108,6 +118,7 @@ end
 
 ; Read the inbox
 to read-inbox
+  
   foreach inbox [
     
 ; If a request for score is received, calculate score and send this back if it's higher
@@ -134,6 +145,15 @@ to read-inbox
      ; Go for second choice
      ; Else go for first choice
      ]
+   
+; If we received a claim  
+   if member? "claim" item 2 ? [
+     let claims item 1 item 2 ?
+     foreach claims ; add to existing claim list
+     [
+       set claimed_passengers lput ? claimed_passengers
+     ]
+   ]
    
    
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
@@ -182,6 +202,8 @@ to set-next-stop
            set max_score(list item 0 ? item 1 ? item 2 ?)
            set next_stop item 1 ?
            set pick_up_passenger_group item 2 ?
+           write "pick_up_passenger_group"
+           show pick_up_passenger_group
          ]
        ]
      ]
@@ -604,6 +626,21 @@ to-report claim-passenger-ids [ busstop claim_passenger_groups ]
   
   report passenger-ids ; list of passenger ids corresponding to claimed groups
 end
+
+; inform all buses about the passenger ids that are claimed
+to communicate-claim 
+  let claim claim-passenger-ids next_stop pick_up_passenger_group
+
+  let id 0
+  while [ id < buses_count ] [    
+    if (id + length graph) != bus_id [
+      send-message (id + length graph) (list "claim" claim)
+    ]
+    set id id + 1   
+  ]
+end
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;print matrix:dimensions score_matrix ; debug - checks matrix dimensions
