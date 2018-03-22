@@ -22,8 +22,9 @@ buses-own [
   score_list      ; List that contains scores for every bus stop 
   buses_database
   max_score
-  wait-counter     ; simple shared tick counter used between functions
+  wait_counter     ; simple shared tick counter used between functions
   maximum-score-busstop ; the maximum score and the next busstop, which will be sent to all buses
+  second_choice   ; boolean indicating to go for the first or second choice
   
   tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip
   tree-group     ;
@@ -37,6 +38,8 @@ to init-buses
 
   set-cost-per-patch
   set-bus-capacity
+  set wait_counter 0
+  set second_choice false
   
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
@@ -48,7 +51,6 @@ to init-buses
   calculate-scores ; Calculate score for connected bus stops
   set-next-stop ; Determine next bus stop (highest score)
   
-  
   set maximum-score-busstop []
  
 end 
@@ -58,27 +60,33 @@ end
 to execute-actions 
   show inbox
   read-inbox
-
-  if current_stop != -1
-  [
-    calculate-scores
-    request-score    
-    set-next-stop
-    ;show next_stop
-    ;show pick_up_passenger_group
-    ;show score_list
-  ]
-
-
-  travel-to next_stop 
-  drop-off-passengers  
-  pick-up-passengers
-
+  
+  ifelse wait_counter > 0 
+   [
+     set wait_counter wait_counter - 1
+     show "wait counter from loop: "
+     show wait_counter  
+   ]
+   [
+   if current_stop != -1 ; If the bus is at a bus stop
+    [     
+     calculate-scores
+     request-score
+     set-next-stop
+     ;show next_stop
+     ;show pick_up_passenger_group
+     ;show score_list
+    ] 
+   travel-to-stop
+   drop-off-passengers
+   pick-up-passengers
+   ]
 
       ;show buses_database
   send-initial-message
       ;show message_protocol ; debug
       ;show bus_passengers?
+    
 end
 
 
@@ -102,23 +110,32 @@ end
 to read-inbox
   foreach inbox [
     
+; If a request for score is received, calculate score and send this back if it's higher
    if member? "request" item 2 ? [
      show "I received a score request!"
      let templist(item 2 ?)
      ;show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
      ; todo calculate scores for specific bus stop     
-     let requested-score (list 3.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)
+     let requested-score (list 7.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)
      ;show "requested-score: "
      ;show requested-score
      show templist
      if (item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
-       send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score, todo: if the score is higher
+       send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
        show "Sent a message back to bus#: "
        show (item 1 ?)
        ]     
      ]
+ 
+; If we received a response  
+   if member? "response" item 2 ? [
+     show "I received a response!"
+     set second_choice true;
+     ; Go for second choice
+     ; Else go for first choice
+     ]
    
-
+   
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
      set buses_count item 1 ? - length graph + 1  ; Updates buses_count
    ]
@@ -134,41 +151,69 @@ to read-inbox
 end
 
 to request-score
-  let id 0
-  while [ id < buses_count ] [    
-    if (id + length graph) != bus_id [
-      send-message (id + length graph) (list "request" max_score)
-      show (list "request" max_score)
-      set wait-counter 5 ; Set a wait counter 
-      ]
-    set id id + 1   
+  ifelse wait_counter = 0 
+  [
+    set wait_counter -1
+  ]
+  [
+    let id 0
+    while [ id < buses_count ] [    
+      if (id + length graph) != bus_id [
+        send-message (id + length graph) (list "request" max_score)
+        show (list "request" max_score)
+        set wait_counter 3 ; Set a wait counter 
+        ]
+      set id id + 1   
+    ]
   ]  
 end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Route ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Set the next stop according to score
 to set-next-stop
-  
-  if next_stop = -1 [
 
-    ifelse (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
-      foreach score_list
-      [
-        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
-        [
-          set max_score(list item 0 ? item 1 ? item 2 ?)
-          set next_stop item 1 ?
-          set pick_up_passenger_group item 2 ?
-        ]
-      ]
-    ]
-    [
-      set next_stop one-of item current_stop graph ; Choose random connected bus stop
-    ]
-  ]
+  ifelse second_choice = false  
+  [
+     ifelse (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
+       foreach score_list
+       [
+         if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
+         [
+           set max_score(list item 0 ? item 1 ? item 2 ?)
+           set next_stop item 1 ?
+           set pick_up_passenger_group item 2 ?
+         ]
+       ]
+     ]
+     [
+       set next_stop one-of item current_stop graph ; Choose random connected bus stop (Why is this still in here?)
+     ]
+   ]
+   [
+     show "I should go for my second choice"
+     show "Max n-values"
+     show max n-values length(score_list) [item 0 item ? score_list]
+     show "N-values list"
+     show n-values length(score_list) [item 0 item ? score_list]
+     foreach score_list
+     [
+       if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
+       [
+         ;set score_list remove (item 0 ?) score_list ; Remove the item from the list - ERROR: Expected list of size X, not size X-1
+         set score_list replace-item (item 0 ?) score_list 0 ; OR Replace the max score with a lower score - NOT WORKING YET                  
+         show "new score_list: "
+         show n-values length(score_list) [item 0 item ? score_list]
+       ]
+     ]                         
+   ]
 end
 
-
+to travel-to-stop
+  if (wait_counter = 0) or (wait_counter = -1)
+  [
+    travel-to next_stop
+  ]
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Passenger actions (pick up/drop off) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Pick up every passenger at the stop until bus is full
