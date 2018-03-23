@@ -1,3 +1,4 @@
+; TODO: improve score function: weights of r0 should be inversely proportional to the distance s0r0
 extensions[matrix]
 
 buses-own [
