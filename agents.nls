@@ -128,11 +128,10 @@ to read-inbox
    if member? "request" item 2 ? [
      show "I received a score request!"
      let templist(item 2 ?)
-     ;show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
+     show "Bus stop number sent by the requestee: "
+     show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
      ; todo calculate scores for specific bus stop     
-     let requested-score (list 7.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)
-     ;show "requested-score: "
-     ;show requested-score
+     let requested-score (list 8.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)     
      show templist
      if (item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
        send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
@@ -179,10 +178,20 @@ to request-score
     set wait_counter -1
   ]
   [
+    ;calc max score
+    foreach score_list
+    [
+      if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
+      [
+        set max_score(list item 0 ? item 1 ? item 2 ?)
+      ]
+    ]
+    ;send message to all other buses    
     let id 0
     while [ id < buses_count ] [    
       if (id + length graph) != bus_id [
         send-message (id + length graph) (list "request" max_score)
+        show "List 'request' max_score, from request-score function: "
         show (list "request" max_score)
         set wait_counter 1 ; Set a wait counter 
         ]
@@ -197,27 +206,28 @@ to set-next-stop
 
   ifelse second_choice = false  
   [
-     ifelse (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
+     if (max n-values length(score_list) [item 0 item ? score_list]) > 0 [
        foreach score_list
        [
          if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
          [
-           set max_score(list item 0 ? item 1 ? item 2 ?)
            set next_stop item 1 ?
+           show "just set next stop (second_choice =false): "
+           show next_stop
            set pick_up_passenger_group item 2 ?
          ]
        ]
-     ]
-     [
-       set next_stop one-of item current_stop graph ; Choose random connected bus stop (Why is this still in here?)
      ]
    ]
    [
      show "Other bus with higher score detected, going for second choice"
      foreach score_list
-     [
+     [    
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
        [
+         show "Score_list_length: "
+         ifelse length(score_list) > 1 [
+         show "length > 1"
          let pos position (item 0 ?) map first score_list
          let temp_list remove-item pos score_list ;remove-item index list replace 0 with location of MAX  (item 0 ?) = VALUE of max.
          foreach temp_list
@@ -225,11 +235,19 @@ to set-next-stop
           if item 0 ? = max n-values length(temp_list) [item 0 item ? temp_list]
           [
             set next_stop item 1 ? 
+            show "just set next stop (second_choice =true): "
+            show next_stop            
             set pick_up_passenger_group item 2 ?
           ] 
          ]
+         ] 
+         [
+           show "length < 1"
+           set next_stop item 1 ?
+         ]
        ]
-     ]                         
+     ]
+     set second_choice false                         
    ]
 end
 
@@ -348,6 +366,8 @@ to calculate-scores
       ]
     ]
     set score_list scores
+    show "Score_list: "
+    show score_list
   ]
 end
 
@@ -583,8 +603,6 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
     let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
     let vs1r0 ( list (item 0 r0 - item 0 s1 ) (item 1 r0 - item 1 s1 ) )
     let vs1r1 ( list (item 0 r1 - item 0 s1 ) (item 1 r1 - item 1 s1 ) )
-    
-    show vs0r0
     
     if pickup_count < 1
     [
