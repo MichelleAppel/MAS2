@@ -66,20 +66,6 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions 
   read-inbox
-
-  if current_stop != -1
-  [
-    calculate-scores
-    set-next-stop
-  ]
- 
-  
-  travel-to next_stop
-  drop-off-passengers  
-  pick-up-passengers
-
-  send-initial-message
-
   
   ifelse wait_counter > 0 
    [
