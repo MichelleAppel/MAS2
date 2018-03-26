@@ -41,6 +41,8 @@ globals [graph]
 ; Initialize agents and variables  
 to init-buses
 
+  set claimed_passengers []
+  
   set-cost-per-patch
   set-bus-capacity
   set wait_counter 0
@@ -58,7 +60,7 @@ to init-buses
   
   set maximum-score-busstop []
   
-  set claimed_passengers []
+
  
 end 
 
@@ -93,13 +95,7 @@ to execute-actions
   send-initial-message
       ;show message_protocol ; debug
       ;show bus_passengers?
-      
-      
-;  write "BUS_ID"
-;  show bus_id
-;  write "CLAIM_LIST"
-;  show claimed_passengers
-    
+          
 end
 
 
@@ -308,6 +304,11 @@ to calculate-scores
       
       let passenger_groups1_count passenger-count get-passengers-at-stop stop1_id
       let passenger_groups1 passenger-group passenger_groups1_count
+      
+      if not empty? claimed_passengers
+      [
+        set passenger_groups1 filter-passenger-groups stop1_id passenger_groups1 
+      ]
 
       let scoresr1 [] ; All scores for stop1
       let passenger_group_combinations [] ; 
@@ -654,6 +655,46 @@ to communicate-claim
       send-message (id + length graph) (list "claim" claim)
     ]
     set id id + 1   
+  ]
+end
+
+; remove all claimed passengers from the passenger_groups before calculating the score
+to-report filter-passenger-groups [ busstop passenger_groups ]
+  ; busstop is busstop to calculate the score for
+  ; passenger_groups is list of [ [destination, amount ], ..., [ destination, amount ] ]
+  ; output is a list of equal dimensions as passenger_groups, with updated amounts
+
+  ifelse not empty? claimed_passengers ; if there is at least one claimed passenger
+  [
+    let busstop_passengers get-passengers-at-stop busstop ; a list of tuples of the form [passenger_id desination_bus_stop]
+    let filtered_passenger_groups passenger_groups ; copy the original list
+    
+    foreach busstop_passengers ; loop through all passengers at given busstop
+    [
+      let passenger_id item 0 ? ; id of passenger at busstop
+      let destination item 1 ? ; destination of passenger at busstop
+      
+      if member? passenger_id claimed_passengers ; if passenger is claimed
+      [
+        ; find the corresponding passenger_group and decrease its amount by one
+        let index 0
+        foreach filtered_passenger_groups
+        [
+          let dest item 0 ?
+          let amount item 1 ?
+          if destination = dest
+          [
+            set amount amount - 1 ; decrease amount of this passenger_group by one (the claimed passenger)
+            set filtered_passenger_groups replace-item index filtered_passenger_groups (list dest amount) ; update the list
+          ]
+          set index index + 1 
+        ]
+      ]
+    ]
+    report filtered_passenger_groups ; return filtered list
+  ]
+  [
+    report passenger_groups ; return original list
   ]
 end
 
