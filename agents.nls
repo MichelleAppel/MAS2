@@ -518,6 +518,12 @@ to-report passenger-group [ passenger_count ]
   report bus_passenger_groups
 end
 
+to-report euclidean_distance [ vector ]
+  let x item 0 vector
+  let y item 1 vector
+  report sqrt( x ^ 2 + y ^ 2 )  
+end
+
 
 ; Compute the score of travelling from stop0 to stop1 and picking up passenger_groups1 given
 ; passenger_groups0 on board of the bus
