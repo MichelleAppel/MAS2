@@ -527,14 +527,22 @@ end
 ; Passenger_groups0 : The passenger groups on board of the bus [ [destination_id group_size] [destination_id group_size] ... ]
 ; Passenger_groups1 : The passenger groups to be picked up     [ [destination_id group_size] [destination_id group_size] ... ]
 
+; Compute the score of travelling from stop0 to stop1 and picking up passenger_groups1 given
+; passenger_groups0 on board of the bus
+
+; Stop0             : Current stop number
+; Stop1             : Next stop number
+; Passenger_groups0 : The passenger groups on board of the bus [ [destination_id group_size] [destination_id group_size] ... ]
+; Passenger_groups1 : The passenger groups to be picked up     [ [destination_id group_size] [destination_id group_size] ... ]
+
 to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
   ifelse stop0_id != -1 and stop1_id != -1 ; Make sure stop0 and stop1 are valid stop ids
   [
-    let s0 ( list item current_stop xs item current_stop ys ) ; Current stop coordinates s0
-    
+    let s0 ( list item stop0_id xs item stop0_id ys ) ; Current stop coordinates s0
     
     ; Estimated route vector r0 (weighted average of destination of passengers on board)
-    let r0 ( list 0 0 )       ; Initialize r0 vector
+    let r0  ( list 0 0 )       ; Initialize r0 vector    
+    let r0w ( list 0 0 )       ; Initialize weighted r0 vector
 
     let drop_off_count 0
     let passenger_groups0_count 0
@@ -548,30 +556,45 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
         let destination_id item 0 passenger_group0 ; The destination of the passenger group
         let group_size     item 1 passenger_group0 ; The group size
         
-        let xw item destination_id xs * group_size ; x coordinate of the destination bus stop times the amount of passengers
-        let yw item destination_id ys * group_size ; y coordinate of the destination bus stop times the amount of passengers
+        let xw item destination_id xs ; x coordinate of the destination bus stop
+        let yw item destination_id ys ; y coordinate of the destination bus stop
+                
+        ; origin vectors
+        let xo ( xw - item 0 s0 )
+        let yo ( yw - item 1 s0 )
+
+        let vec_size euclidean_distance ( list xo yo )
         
-        set r0 ( list ( item 0 r0 + xw ) ( item 1 r0 + yw ) ) ; Increment r0 vector
+        set r0w ( list ( item 0 r0w + xo * ( group_size / vec_size ) ) ( item 1 r0w + yo * ( group_size / vec_size ) ) ) ; Increment r0 weighted vector
+        set r0  ( list ( item 0 r0  + xo )              ( item 1 r0  + yo ) )              ; Increment r0 vector
+        
         set passenger_groups0_count passenger_groups0_count + group_size
         if destination_id = stop1_id
         [
           set drop_off_count drop_off_count + group_size
         ]
       ]
-      set r0 ( list (item 0 r0 / passenger_groups0_count ) (item 1 r0 / passenger_groups0_count ) ) ; Normalize with respect to the total amount of passengers in group0
+      let avg_r0_size euclidean_distance ( list item 0 r0  item 1 r0  ) / length passenger_groups0
+      let r0w_size    euclidean_distance ( list item 0 r0w item 1 r0w ) 
+      
+      set r0w ( list (item 0 r0w * ( avg_r0_size / r0w_size ) ) (item 1 r0w * ( avg_r0_size / r0w_size ) ) ) ; Scale according to route length
+      
+      set r0 ( list ( item 0 r0w + item 0 s0 ) ( item 1 r0w + item 1 s0 ) )
+      
     ]
     [
       set r0 s0 ; If there are no passengers on board set the estimated route equal to the current stop
     ]
     
-
+    
     let s1 ( list item stop1_id xs item stop1_id ys ) ; Next stop coordinates s1
     
     ; Estimated route vector r1 (weighted average of destination of passengers on board)
-    let r1 ( list 0 0 )       ; Initialize r1 vector
+    let r1  ( list 0 0 )        ; Initialize r1 vector
+    let r1w ( list 0 0 )        ; Initialize weighted r1 vector
 
     let passenger_groups1_count 0
-    ifelse length passenger_groups1 > 0 ; If there are passengers on board
+    ifelse length passenger_groups1 > 0 ; If there are passengers waiting
     [
       foreach passenger_groups1 ; For every passenger group that is waiting
       [ 
@@ -580,16 +603,42 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
         let destination_id item 0 passenger_group1 ; The destination of the passenger group
         let group_size     item 1 passenger_group1 ; The group size
         
-        let xw item destination_id xs * group_size ; x coordinate of the destination bus stop times the amount of passengers
-        let yw item destination_id ys * group_size ; y coordinate of the destination bus stop times the amount of passengers
+        let xw item destination_id xs ; x coordinate of the destination bus stop times the amount of passengers
+        let yw item destination_id ys ; y coordinate of the destination bus stop times the amount of passengers
         
-        set r1 ( list ( item 0 r1 + xw ) ( item 1 r1 + yw ) ) ; Increment r1 vector
+        ; origin vectors
+        let xo ( xw - item 0 s1 )
+        let yo ( yw - item 1 s1 )
+        
+        let vec_size euclidean_distance ( list xo yo )
+        
+        set r1w ( list ( item 0 r1w + xo * ( group_size / vec_size ) ) ( item 1 r1w + yo * ( group_size / vec_size ) ) ) ; Increment r1 weighted vector
+        set r1  ( list ( item 0 r1  + xo )              ( item 1 r1  + yo ) )              ; Increment r1 vector        
+       
         set passenger_groups1_count passenger_groups1_count + group_size
       ]
-      set r1 ( list ( item 0 r1 / passenger_groups1_count ) ( item 1 r1 / passenger_groups1_count ) ) ; Normalize with respect to the total amount of passengers in group1
+      let avg_r1_size  euclidean_distance ( list item 0 r1  item 1 r1 ) / length passenger_groups1
+      let r1w_size euclidean_distance ( list item 0 r1w item 1 r1w ) 
+      
+      set r1w ( list (item 0 r1w * ( avg_r1_size / r1w_size ) ) (item 1 r1w * ( avg_r1_size / r1w_size ) ) ) ; Scale according to route length
+      
+      set r1 ( list ( item 0 r1w + item 0 s1 ) ( item 1 r1w + item 1 s1 ) )
+      
+      ;let combined_group_size passenger_groups0_count + passenger_groups1_count
+      ;let r0_weight passenger_groups0_count / combined_group_size
+      ;let r1_weight passenger_groups1_count / combined_group_size
+      
+      ;set r1 ( list ( item 0 r1 * r1_weight  + item 0 r0 * r0_weight ) ( item 1 r1 * r1_weight + item 1 r0 * r0_weight ) ) ; Count original route vector along
+      
     ]
     [
-      set r1 r0 ; If there are no passengers on board set the estimated route equal to original r0
+      ifelse length passenger_groups0 > 0
+      [ 
+        set r1 r0 ; If there are no passengers waiting set the estimated route equal to original r0
+      ]
+      [
+        set r1 s1 ; If the bus is empty set r1 to current stop s1
+      ]
     ]
     
     let available_seats capacity - passenger_groups0_count + drop_off_count ; The amount of passengers the bus is able to pick up
@@ -599,12 +648,20 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
       set pickup_count available_seats ; Maximum amount of people that can be picked up
     ]
 
+
+    if pickup_count < 1 and length passenger_groups0 > 0
+    [
+      set r1 r0 ; If no passengers can be picked up: route1 is route0
+    ]                 ; The case where not everyone can be picked up is not considered
+    
+    
+       
     ; Set all vectors
     let vs0s1 ( list (item 0 s1 - item 0 s0 ) (item 1 s1 - item 1 s0 ) )
     let vs0r0 ( list (item 0 r0 - item 0 s0 ) (item 1 r0 - item 1 s0 ) )
     let vs1r0 ( list (item 0 r0 - item 0 s1 ) (item 1 r0 - item 1 s1 ) )
     let vs1r1 ( list (item 0 r1 - item 0 s1 ) (item 1 r1 - item 1 s1 ) )
-    
+
     if pickup_count < 1
     [
       set vs1r1 vs1r0 ; If no passengers can be picked up: route1 is route0
@@ -620,8 +677,11 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
     let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
     let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
     
-    report ( 1 / cost_per_patch ) * ( 1 + drop_off_count ) * ln( 1 + exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) ) 
-                                  + ( 1 + pickup_count   ) * ln( 1 + exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) )
+    let score_ ( 1 / cost_per_patch ) * ( ( 1 + drop_off_count ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / len_vs0s1 ) +
+                                          (     pickup_count   ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / len_vs0s1 ) )
+
+    report score_
+    
   ]
   [
     report -1 ; Invalid score
