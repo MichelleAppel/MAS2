@@ -216,7 +216,7 @@ to set-next-stop
      ]
    ]
    [
-     show "Other bus with higher score detected, going for second choice"
+     ;show "Other bus with higher score detected, going for second choice"
      foreach score_list
      [    
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
@@ -583,7 +583,10 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
       let avg_r0_size euclidean_distance ( list item 0 r0  item 1 r0  ) / length passenger_groups0
       let r0w_size    euclidean_distance ( list item 0 r0w item 1 r0w ) 
       
-      set r0w ( list (item 0 r0w * ( avg_r0_size / r0w_size ) ) (item 1 r0w * ( avg_r0_size / r0w_size ) ) ) ; Scale according to route length
+      if r0w_size > 0
+      [
+        set r0w ( list (item 0 r0w * ( avg_r0_size / r0w_size ) ) (item 1 r0w * ( avg_r0_size / r0w_size ) ) ) ; Scale according to route length
+      ]
       
       set r0 ( list ( item 0 r0w + item 0 s0 ) ( item 1 r0w + item 1 s0 ) )
       
@@ -626,7 +629,10 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
       let avg_r1_size  euclidean_distance ( list item 0 r1  item 1 r1 ) / length passenger_groups1
       let r1w_size euclidean_distance ( list item 0 r1w item 1 r1w ) 
       
-      set r1w ( list (item 0 r1w * ( avg_r1_size / r1w_size ) ) (item 1 r1w * ( avg_r1_size / r1w_size ) ) ) ; Scale according to route length
+      if r1w_size > 0
+      [
+        set r1w ( list (item 0 r1w * ( avg_r1_size / r1w_size ) ) (item 1 r1w * ( avg_r1_size / r1w_size ) ) ) ; Scale according to route length
+      ]
       set r1 ( list ( item 0 r1w + item 0 s1 ) ( item 1 r1w + item 1 s1 ) )
       
       ;let combined_group_size passenger_groups0_count + passenger_groups1_count
