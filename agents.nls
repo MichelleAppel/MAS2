@@ -15,6 +15,7 @@ buses-own [
   current_stop    ; ID of the bus stop where the agent (bus) currently is (-1 means that the agent is not at any bus stop).
   next_stop       ; ID of the bus stop the agent (bus) is traveling to (-1 means that the agent is not travelling to any bus stop).
   target_stop     ; ID of the bus stop desired by the requester
+  desired_stops   ; ID(s) of the desired bus stop(s) consisting of a) possible bus stops or b) requested bus stop
   
   ; New local variables for students.
   ; You can create any new local variable you want. Just declare them here.
@@ -55,14 +56,10 @@ to init-buses
   set buses_count bus_id - length graph + 1 ; Set current amount of busses
   send-initial-message ; Send message to all other existing busses to let know that a new bus exists
   set buses_database n-values buses_count [[]]
-  
-  calculate-scores ; Calculate score for connected bus stops
+  calculate-scores item current_stop graph ; Calculate score for connected bus stops
   set-next-stop ; Determine next bus stop (highest score)
   
-  set maximum-score-busstop []
-  
-
- 
+  set maximum-score-busstop []  
 end 
 
 ; Add decision making strategies for your agents here.
@@ -79,7 +76,7 @@ to execute-actions
    [
    if current_stop != -1 ; If the bus is at a bus stop
     [     
-     calculate-scores
+     calculate-scores item current_stop graph
      request-score
      set-next-stop
      communicate-claim
@@ -125,8 +122,8 @@ to read-inbox
    if member? "request" item 2 ? [
      show "Received a score request!"
      let templist(item 2 ?)
-     set target_stop item 1 item 1 templist ; Bus stop number sent by the requester
-     calculate-scores ; Update
+     set target_stop (list item 1 item 1 templist) ; Bus stop number sent by the requester
+     calculate-scores target_stop ; Update
      let requested-score get-score target_stop
      ;show requested-score ; Show requested score
      ;show "comparing: "
@@ -255,6 +252,7 @@ to travel-to-stop
   ]
 end
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Passenger actions (pick up/drop off) ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Pick up every passenger at the stop until bus is full
 to pick-up-passengers
@@ -289,13 +287,15 @@ end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-to calculate-scores
+to calculate-scores [ stops ]
+  show "input variable 'stops' from calculate-scores contains: "
+  show stops
   set maximum-score-busstop []
   let scores []
   
   if current_stop != -1
   [
-    foreach (item current_stop graph) ; Get possible next stops
+    foreach (stops) ; Get possible next stops
     [
       let stop0_id current_stop
       let stop1_id ?
@@ -866,3 +866,4 @@ to-report get-score [s1_id]
   report scores            
  ][show "no possible connection between: " show s0_id show "and Bus stop number sent by the requestee: " show target_stop show "possible next stops: " show item s0_id graph report [[0 0 [0]]]] ; if no possible connection, report 0
 end
+
