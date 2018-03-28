@@ -120,27 +120,22 @@ to read-inbox
     
 ; If a request for score is received, calculate score and send this back if it's higher
    if member? "request" item 2 ? [
-     show "Received a score request!"
+;     show "Received a score request!"
      let templist(item 2 ?)
      set target_stop item 1 item 1 templist ; Bus stop number sent by the requester
-     show "target stop: "
-     show target_stop
      let requested-score get-score target_stop
-     show "requested-score variable: "
-     show requested-score ; Show requested score
-     show "comparing: "
-     show item 0 item 0 requested-score
-     show "is higher than? : "
-     show item 0 item 1 templist
+;     show "comparing: "
+;     show item 0 item 0 requested-score
+;     show "is higher than? : "
+;     show item 0 item 1 templist
      if (item 0 item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
        send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
-       show "Got higher score, sent a message back to bus#: "
-       show (item 1 ?)       ]     
+     ]     
      ]
  
 ; If we received a response  
    if member? "response" item 2 ? [
-     show "I received a response!"
+     ;show "Received a response!"
      set second_choice true;
      ; Go for second choice
      ; Else go for first choice
@@ -186,11 +181,9 @@ to request-score
     ]
     ;send message to all other buses    
     let id 0
-    while [ id < buses_count ] [    
+    while [ id < buses_count ] [   ; Send a request to all other buses 
       if (id + length graph) != bus_id [
         send-message (id + length graph) (list "request" max_score)
-        show "Sending request to other buses: "
-        show (list "request" max_score)
         set wait_counter 1 ; Set a wait counter 
         ]
       set id id + 1   
@@ -218,8 +211,8 @@ to set-next-stop
      ]
    ]
    [
-     show "Other bus with higher score detected, going for second choice"
-     foreach score_list
+     ;show "Other bus with higher score detected, going for second choice"
+     foreach score_list ; Go for second-best option if another bus scores higher
      [    
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
        [        
@@ -230,15 +223,12 @@ to set-next-stop
          [
           if item 0 ? = max n-values length(temp_list) [item 0 item ? temp_list]
           [
-            set next_stop item 1 ? 
-            show "just set next stop: "
-            show next_stop            
+            set next_stop item 1 ?             
             set pick_up_passenger_group item 2 ?
           ] 
          ]
          ] 
          [
-           show "length < 1"
            set next_stop item 1 ?
          ]
        ]
@@ -290,8 +280,6 @@ end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Calculate Score ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 to calculate-scores [ stops ]
-  show "input variable 'stops' from calculate-scores contains: "
-  show stops
   set maximum-score-busstop []
   let scores []
   
@@ -788,30 +776,14 @@ end
 ; get maximum score for a certain bus stop
 to-report get-score [s1_id]
   let s0_id 0
-  ifelse current_stop = -1 [set s0_id next_stop][set s0_id current_stop]
-  ;show "s0_id (current_stop): "
-  ;show s0_id
-  
-  ;show "s1_id (target_stop): "
-  ;show s1_id
-
-  let passenger_groups0_count passenger-count bus_passengers
-  let passenger_groups0 passenger-group passenger_groups0_count  
-  ;show "Passenger_groups0: "
-  ;show passenger_groups0
-  
-  ;check if it is connected
-  ;show "Item current_stop graph: "
-  ;show item s0_id graph ; Get possible next stops
-  
+  ifelse current_stop = -1 [set s0_id next_stop][set s0_id current_stop]  
   ;if not connected, report 0
   ifelse member? s1_id item s0_id graph [                
-  show "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ POSSIBLE CONNECTION FOUND @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+  ;show "In answer to request for score, a possible connection was found. Calculate scores and possibly reply"
   let target_stop2 (list target_stop)
-  show "calculate-scores target_stop: "
-  calculate-scores target_stop2 ; Update, score_list contains what you want  
-  show score_list
+  calculate-scores target_stop2 ; Update score for requested bus stop, score_list contains the relevant score  
   report score_list            
- ][show "no possible connection between: " show s0_id show "and Bus stop number sent by the requestee: " show target_stop show "possible next stops: " show item s0_id graph report [[0 0 [0]]]] ; if no possible connection, report 0
+  ]
+  [report [[0 0 [0]]]] ; if no possible connection, report 0
 end
 
