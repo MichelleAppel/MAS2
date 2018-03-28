@@ -17,24 +17,23 @@ buses-own [
   target_stop     ; ID of the bus stop desired by the requester
   desired_stops   ; ID(s) of the desired bus stop(s) consisting of a) possible bus stops or b) requested bus stop
   
-  ; New local variables for students.
-  ; You can create any new local variable you want. Just declare them here.
-  buses_count     ; The amount of other busses that exist
-  message_protocol; The variable that is going to contain the message
-  score_list      ; List that contains scores for every bus stop 
-  buses_database
-      
-  pick_up_passenger_group ; The passenger groups that the bus is going to pick up
+  ; Local variables
+  buses_count        ; The amount of buses that exist in the simulation.
+  message_protocol   ; The variable that is going to contain the message.
+  score_list         ; List that contains scores for every bus stop.
+  buses_database     ; TODO: add variable description.
+  max_score          ; TODO: add variable description.
+  wait_counter       ; Simple shared tick counter used between functions.
+  maximum-score-busstop ; The maximum score and the next busstop, which will be sent to all buses.
+  pick_up_passenger_group ; The passenger groups that the bus is going to pick up.
+  second_choice   ; Boolean indicating to go for the first or second choice.
 
-  max_score
-  wait_counter     ; simple shared tick counter used between functions
-  maximum-score-busstop ; the maximum score and the next busstop, which will be sent to all buses
-  second_choice   ; boolean indicating to go for the first or second choice
-
-  tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip
-  tree-group     ;
+  tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip.
+  tree-group     ; TODO: add variable description.
   
-  claimed_passengers ; list of claimed passenger_ids
+  claimed_passengers ; List of claimed passenger_ids.
+  
+  power-set-threshold ; Threshold for score calculation: if lower than threshold, take power-set; else, do heuristic tree search.
 ]
  
 globals [graph]
@@ -44,7 +43,8 @@ globals [graph]
 to init-buses
 
   set claimed_passengers []
-  
+  set power-set-threshold 8
+    
   set-cost-per-patch
   set-bus-capacity
   set wait_counter 0
@@ -304,7 +304,7 @@ to calculate-scores [ stops ]
       let scoresr1 [] ; All scores for stop1
       let passenger_group_combinations [] ; 
        
-      ifelse length passenger_groups1 < 10 ; Pick acceptable treshold to prevent blowup
+      ifelse length passenger_groups1 < power-set-threshold ; Threshold to prevent blowup
       [
         set passenger_group_combinations calculate-power-set passenger_groups1 ; Powerset of all groups
 
