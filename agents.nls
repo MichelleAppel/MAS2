@@ -14,6 +14,7 @@ buses-own [
   previous_stop   ; ID of the last bus stop that the agent (bus) visited (-1 means that the agent has not visited any bus stop yet).
   current_stop    ; ID of the bus stop where the agent (bus) currently is (-1 means that the agent is not at any bus stop).
   next_stop       ; ID of the bus stop the agent (bus) is traveling to (-1 means that the agent is not travelling to any bus stop).
+  target_stop     ; ID of the bus stop desired by the requester
   
   ; New local variables for students.
   ; You can create any new local variable you want. Just declare them here.
@@ -122,23 +123,25 @@ to read-inbox
     
 ; If a request for score is received, calculate score and send this back if it's higher
    if member? "request" item 2 ? [
-     ;show "I received a score request!"
+     show "Received a score request!"
      let templist(item 2 ?)
-     ;show "Bus stop number sent by the requestee: "
-     ;show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
-     ; todo calculate scores for specific bus stop     
-     let requested-score (list 8.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)     
-     ;show templist
-     if (item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
+     set target_stop item 1 item 1 templist ; Bus stop number sent by the requester
+     calculate-scores ; Update
+     let requested-score get-score target_stop
+     ;show requested-score ; Show requested score
+     ;show "comparing: "
+     ;show item 0 item 0 requested-score
+     ;show "is higher than? : "
+     ;show item 0 item 1 templist
+     if (item 0 item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
        send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
-       ;show "Sent a message back to bus#: "
-       ;show (item 1 ?)
-       ]     
+       show "Got higher score, sent a message back to bus#: "
+       show (item 1 ?)       ]     
      ]
  
 ; If we received a response  
    if member? "response" item 2 ? [
-     ;show "I received a response!"
+     show "I received a response!"
      set second_choice true;
      ; Go for second choice
      ; Else go for first choice
@@ -187,8 +190,8 @@ to request-score
     while [ id < buses_count ] [    
       if (id + length graph) != bus_id [
         send-message (id + length graph) (list "request" max_score)
-        ;show "List 'request' max_score, from request-score function: "
-        ;show (list "request" max_score)
+        show "Sending request to other buses: "
+        show (list "request" max_score)
         set wait_counter 1 ; Set a wait counter 
         ]
       set id id + 1   
@@ -216,29 +219,27 @@ to set-next-stop
      ]
    ]
    [
-     ;show "Other bus with higher score detected, going for second choice"
+     show "Other bus with higher score detected, going for second choice"
      foreach score_list
      [    
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
-       [
-         ;show "Score_list_length: "
-         ifelse length(score_list) > 1 [
-         ;show "length > 1"
+       [        
+         ifelse length(score_list) > 1 [ ; only go for a second choice if there IS a second choice
          let pos position (item 0 ?) map first score_list
-         let temp_list remove-item pos score_list ;remove-item index list replace 0 with location of MAX  (item 0 ?) = VALUE of max.
+         let temp_list remove-item pos score_list ; Find second-highest score
          foreach temp_list
          [
           if item 0 ? = max n-values length(temp_list) [item 0 item ? temp_list]
           [
             set next_stop item 1 ? 
-            ;show "just set next stop (second_choice =true): "
-            ;show next_stop            
+            show "just set next stop: "
+            show next_stop            
             set pick_up_passenger_group item 2 ?
           ] 
          ]
          ] 
          [
-           ;show "length < 1"
+           show "length < 1"
            set next_stop item 1 ?
          ]
        ]
@@ -782,15 +783,86 @@ to-report filter-passenger-groups [ busstop passenger_groups ]
   ]
 end
 
+; get maximum score for a certain bus stop
+to-report get-score [s1_id]
+  let scores []  
+  let s0_id 0
+  ifelse current_stop = -1 [set s0_id next_stop][set s0_id current_stop]
+  ;show "s0_id (current_stop): "
+  ;show s0_id
+  
+  ;show "s1_id (target_stop): "
+  ;show s1_id
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USEFUL DEBUG COMMANDS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;print matrix:dimensions score_matrix ; debug - checks matrix dimensions
-  ;matrix:get matrix row-i col-j ;could be used to check scores of others, also see: matrix:get-row matrix row-i
-  ;matrix:set matrix row-i col-j new-value ;fill the matrix with the score per person using this command
-  ;show "Matrix update: "
-  ;print matrix:pretty-print-text score_matrix  
+  let passenger_groups0_count passenger-count bus_passengers
+  let passenger_groups0 passenger-group passenger_groups0_count  
+  ;show "Passenger_groups0: "
+  ;show passenger_groups0
+  
+  ;check if it is connected
+  ;show "Item current_stop graph: "
+  ;show item s0_id graph ; Get possible next stops
+  
+  ;if not connected, report 0
+  ifelse member? s1_id item s0_id graph [
+    let stop_score 0            
+    let passenger_groups1_count passenger-count get-passengers-at-stop s1_id
+    let passenger_groups1 passenger-group passenger_groups1_count
 
-  ;if current_stop != -1 
-  ;[
-  ; show (word "Passengers at current stop " current_stop ": " (get-passengers-at-stop current_stop))    
-  ;]
+    let scoresr1 [] ; All scores for stop1
+    let passenger_group_combinations [] ; 
+     
+    ifelse length passenger_groups1 < 10 ; Pick acceptable treshold to prevent blowup
+    [
+      set passenger_group_combinations calculate-power-set passenger_groups1 ; Powerset of all groups
+
+      foreach passenger_group_combinations
+      [
+        let passenger_groups1_subset ? ; Subset of the passenger groups
+
+        let scorer1 score s0_id s1_id passenger_groups0 passenger_groups1_subset ; Compute score for passenger group subset          
+        set scoresr1 lput scorer1 scoresr1 ; Append score to score list for this stop
+      ]
+    ]
+    
+    [ ; If more then 10 passenger groups        
+      let scorer1_group_list score-tree-search s0_id s1_id passenger_groups0 passenger_groups1
+      
+      set scoresr1 ( list item 0 scorer1_group_list )
+      set passenger_group_combinations ( list item 1 scorer1_group_list )
+    ]
+
+    let maximum max scoresr1
+    let argmax position max scoresr1 scoresr1
+    let pickup_groups []
+    
+    foreach item argmax passenger_group_combinations
+    [
+      ifelse length(?) > 0
+      [
+        set pickup_groups lput item 0 ? pickup_groups
+      ]
+      [
+        set pickup_groups lput [] pickup_groups
+      ]
+    ]
+    
+    set scores lput ( list maximum s1_id pickup_groups ) scores
+    
+  ; set maximum score, along with busstop and passenger group, to communicate with other buses
+  ifelse length(maximum-score-busstop) = 0
+  [
+    set maximum-score-busstop ( list maximum s1_id pickup_groups )
+  ]
+  [
+    if maximum > item 0 maximum-score-busstop
+    [
+      set maximum-score-busstop ( list maximum s1_id pickup_groups )         
+    ]
+  ]
+                
+  show "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ POSSIBLE CONNECTION FOUND @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"    
+  set score_list scores
+  report scores            
+ ][show "no possible connection between: " show s0_id show "and Bus stop number sent by the requestee: " show target_stop show "possible next stops: " show item s0_id graph report [[0 0 [0]]]] ; if no possible connection, report 0
+end
