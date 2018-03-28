@@ -72,8 +72,8 @@ to execute-actions
   ifelse wait_counter > 0 
    [
      set wait_counter wait_counter - 1
-     show "wait counter from loop: "
-     show wait_counter  
+     ;show "wait counter from loop: "
+     ;show wait_counter  
    ]
    [
    if current_stop != -1 ; If the bus is at a bus stop
@@ -122,23 +122,23 @@ to read-inbox
     
 ; If a request for score is received, calculate score and send this back if it's higher
    if member? "request" item 2 ? [
-     show "I received a score request!"
+     ;show "I received a score request!"
      let templist(item 2 ?)
-     show "Bus stop number sent by the requestee: "
-     show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
+     ;show "Bus stop number sent by the requestee: "
+     ;show item 1 item 1 templist ; returns the bus stop number sent by the requestee 
      ; todo calculate scores for specific bus stop     
      let requested-score (list 8.14 16 [1 7]) ; static for now because I'm not sure how to calculate scores for one specific bus stop (item 1 item 1 templist)     
-     show templist
+     ;show templist
      if (item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
        send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
-       show "Sent a message back to bus#: "
-       show (item 1 ?)
+       ;show "Sent a message back to bus#: "
+       ;show (item 1 ?)
        ]     
      ]
  
 ; If we received a response  
    if member? "response" item 2 ? [
-     show "I received a response!"
+     ;show "I received a response!"
      set second_choice true;
      ; Go for second choice
      ; Else go for first choice
@@ -187,8 +187,8 @@ to request-score
     while [ id < buses_count ] [    
       if (id + length graph) != bus_id [
         send-message (id + length graph) (list "request" max_score)
-        show "List 'request' max_score, from request-score function: "
-        show (list "request" max_score)
+        ;show "List 'request' max_score, from request-score function: "
+        ;show (list "request" max_score)
         set wait_counter 1 ; Set a wait counter 
         ]
       set id id + 1   
@@ -221,9 +221,9 @@ to set-next-stop
      [    
        if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
        [
-         show "Score_list_length: "
+         ;show "Score_list_length: "
          ifelse length(score_list) > 1 [
-         show "length > 1"
+         ;show "length > 1"
          let pos position (item 0 ?) map first score_list
          let temp_list remove-item pos score_list ;remove-item index list replace 0 with location of MAX  (item 0 ?) = VALUE of max.
          foreach temp_list
@@ -231,14 +231,14 @@ to set-next-stop
           if item 0 ? = max n-values length(temp_list) [item 0 item ? temp_list]
           [
             set next_stop item 1 ? 
-            show "just set next stop (second_choice =true): "
-            show next_stop            
+            ;show "just set next stop (second_choice =true): "
+            ;show next_stop            
             set pick_up_passenger_group item 2 ?
           ] 
          ]
          ] 
          [
-           show "length < 1"
+           ;show "length < 1"
            set next_stop item 1 ?
          ]
        ]
@@ -591,7 +591,7 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
     [
       set r0 s0 ; If there are no passengers on board set the estimated route equal to the current stop
     ]
-    
+     
     
     let s1 ( list item stop1_id xs item stop1_id ys ) ; Next stop coordinates s1
     
@@ -627,7 +627,6 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
       let r1w_size euclidean_distance ( list item 0 r1w item 1 r1w ) 
       
       set r1w ( list (item 0 r1w * ( avg_r1_size / r1w_size ) ) (item 1 r1w * ( avg_r1_size / r1w_size ) ) ) ; Scale according to route length
-      
       set r1 ( list ( item 0 r1w + item 0 s1 ) ( item 1 r1w + item 1 s1 ) )
       
       ;let combined_group_size passenger_groups0_count + passenger_groups1_count
@@ -686,17 +685,7 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
     let score_ ( 1 / cost_per_patch ) * ( ( 1 + drop_off_count ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / sqrt(len_vs0s1) ) +
                                           (     pickup_count   ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / sqrt(len_vs0s1) ) )
 
-;    show ""
-;    show stop0_id
-;    show stop1_id
-;    
-;    show passenger_groups0
-;    show passenger_groups1
-;    
-;    show vs0s1
-;    show vs0r0
-;    show vs1r0
-;    show vs1r1
+
 
     report score_
     
@@ -769,6 +758,17 @@ to-report filter-passenger-groups [ busstop passenger_groups ]
         ]
       ]
     ]
+    foreach filtered_passenger_groups
+    [
+      let passenger_group ?
+      let group_size item 1 passenger_group
+      if group_size = 0
+      [
+        let group_index position passenger_group filtered_passenger_groups
+        set filtered_passenger_groups remove-item group_index filtered_passenger_groups
+      ]
+    ]
+       
     report filtered_passenger_groups ; return filtered list
   ]
   [
