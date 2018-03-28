@@ -93,7 +93,10 @@ to execute-actions
   send-initial-message
       ;show message_protocol ; debug
       ;show bus_passengers?
-          
+      
+      
+ ;;; IF NEW BUS, SEND THIS ON THE FIRST TICK
+ ; send-message (length graph) (list "request-all-claims" "please")             
 end
 
 
@@ -118,38 +121,63 @@ to read-inbox
   
   foreach inbox [
     
-; If a request for score is received, calculate score and send this back if it's higher
-   if member? "request" item 2 ? [
-;     show "Received a score request!"
-     let templist(item 2 ?)
-     set target_stop item 1 item 1 templist ; Bus stop number sent by the requester
-     let requested-score get-score target_stop
-;     show "comparing: "
-;     show item 0 item 0 requested-score
-;     show "is higher than? : "
-;     show item 0 item 1 templist
-     if (item 0 item 0 requested-score) > item 0 item 1 templist [ ; Compare newly calculated score with the score of the bus that asked for it
-       send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
-     ]     
-     ]
+    ;;;;; SCORES ;;;;;
+    
+    ; If a request for score is received, calculate score and send this back if it's higher
+    if member? "request" item 2 ? [
+      let templist(item 2 ?)
+      set target_stop item 1 item 1 templist ; Bus stop number sent by the requester
+      let requested-score get-score target_stop
+      ;     show "comparing: "
+      ;     show item 0 item 0 requested-score
+      ;     show "is higher than? : "
+      ;     show item 0 item 1 templist
+      if (item 0 item 0 requested-score) > item 0 item 1 templist
+      [ ; Compare newly calculated score with the score of the bus that asked for it
+        send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
+      ]     
+    ]
  
-; If we received a response  
-   if member? "response" item 2 ? [
-     ;show "Received a response!"
-     set second_choice true;
-     ; Go for second choice
-     ; Else go for first choice
-     ]
+    ; If we received a response, another bus has a higher score, so go for second choice.
+    if member? "response" item 2 ? [
+      set second_choice true;
+    ]
+    ;;;;;;;;;;;;;;;;;;
    
-; If we received a claim  
-   if member? "claim" item 2 ? [
-     let claims item 1 item 2 ?
-     foreach claims ; add to existing claim list
-     [
-       set claimed_passengers lput ? claimed_passengers
-     ]
-   ]
    
+    ;;;;; CLAIMS ;;;;;     
+
+    ; If we receive a list of all claims, update claimed_passengers
+    if member? "inform-all-claims" item 2 ? [
+      let claims item 1 item 2 ?
+      set claimed_passengers claims
+    ]
+
+    ; If we receive a list of new claims, add them to existing claim list
+    if member? "inform-new-claims" item 2 ? [
+      let claims item 1 item 2 ?
+      foreach claims
+      [
+        set claimed_passengers lput ? claimed_passengers
+      ]
+    ]
+
+    ; If we receive a request for all claims, send your list of claimed_passengers to the requester
+    if member? "request-all-claims" item 2 ? [
+      send-message (item 1 ?) (list "inform-all-claims" claimed_passengers)    
+    ]
+
+    ; If we received a claim  
+    ;if member? "claim" item 2 ? [
+    ;  let claims item 1 item 2 ?
+    ;  foreach claims ; add to existing claim list
+    ;  [
+    ;    set claimed_passengers lput ? claimed_passengers
+    ;  ]
+    ;]
+    
+    ;;;;;;;;;;;;;;;;;;
+      
    
    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
      set buses_count item 1 ? - length graph + 1  ; Updates buses_count
@@ -716,7 +744,7 @@ to communicate-claim
   let id 0
   while [ id < buses_count ] [    
     if (id + length graph) != bus_id [
-      send-message (id + length graph) (list "claim" claim)
+      send-message (id + length graph) (list "inform-new-claims" claim)
     ]
     set id id + 1   
   ]
