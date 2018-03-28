@@ -5,8 +5,8 @@ buses-own [
   ; Static, read-only variables. These values never change. You can read them, but you cannot change them.
   bus_id          ; The ID of a given agent (bus). Each agent has a unique ID.
   bus_type        ; The type of a given agent (bus). 1 means "small", 2 means "medium" and 3 means "large".
-  cost_per_patch  ; The cost per patch for this bus type
-  capacity        ; The capacity of the bus
+  cost_per_patch  ; The cost per patch for this bus type.
+  capacity        ; The capacity of the bus.
   
   ; Dynamic, read-only variables. These values may change over time. You can read them, but you cannot change them.
   inbox           ; List containing all the incoming messages (a given message is a list like this [tick sender message]).
@@ -14,8 +14,8 @@ buses-own [
   previous_stop   ; ID of the last bus stop that the agent (bus) visited (-1 means that the agent has not visited any bus stop yet).
   current_stop    ; ID of the bus stop where the agent (bus) currently is (-1 means that the agent is not at any bus stop).
   next_stop       ; ID of the bus stop the agent (bus) is traveling to (-1 means that the agent is not travelling to any bus stop).
-  target_stop     ; ID of the bus stop desired by the requester
-  desired_stops   ; ID(s) of the desired bus stop(s) consisting of a) possible bus stops or b) requested bus stop
+  target_stop     ; ID of the bus stop desired by the requester.
+  desired_stops   ; ID(s) of the desired bus stop(s) consisting of a) possible bus stops or b) requested bus stop.
   
   ; Local variables
   buses_count        ; The amount of buses that exist in the simulation.
@@ -43,7 +43,7 @@ globals [graph]
 to init-buses
 
   set claimed_passengers []
-  set power-set-threshold 8
+  set power-set-threshold 8 ; Set threshold for calculating score (lower than 8 = power-set).
     
   set-cost-per-patch
   set-bus-capacity
@@ -53,50 +53,46 @@ to init-buses
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
     
-  set buses_count bus_id - length graph + 1 ; Set current amount of busses
-  send-initial-message ; Send message to all other existing busses to let know that a new bus exists
+  set buses_count bus_id - length graph + 1 ; Set current amount of buses.
+  send-initial-message ; Send message to all other existing buses to let know that a new bus exists.
   set buses_database n-values buses_count [[]]
-  calculate-scores item current_stop graph ; Calculate score for connected bus stops
-  set-next-stop ; Determine next bus stop (highest score)
+  calculate-scores item current_stop graph ; Calculate score for connected bus stops.
+  set-next-stop ; Determine next bus stop (highest score).
   
   set maximum-score-busstop []  
 end 
 
 ; Add decision making strategies for your agents here.
 ; You are allowed to use the global variable 'ticks'.
-to execute-actions 
-  read-inbox
+to execute-actions
   
+  ; TODO: Optimize this if-statement (needs to be more specific, but next_stop = -1 does not work).
+  ; If this bus is new (and not the first bus), request all claims from the first bus.
+  if previous_stop = -1
+  [
+    send-message (length graph) (list "request-all-claims" "please")
+  ] 
+  
+  read-inbox
+   
   ifelse wait_counter > 0 
-   [
-     set wait_counter wait_counter - 1
-     ;show "wait counter from loop: "
-     ;show wait_counter  
-   ]
-   [
-   if current_stop != -1 ; If the bus is at a bus stop
+  [
+    set wait_counter wait_counter - 1  
+  ]
+  [
+    if current_stop != -1 ; If the bus is at a bus stop
     [     
-     calculate-scores item current_stop graph
-     request-score
-     set-next-stop
-     communicate-claim
-     ;show next_stop
-     ;show pick_up_passenger_group
-     ;show score_list
+      calculate-scores item current_stop graph
+      request-score
+      set-next-stop
+      communicate-claim
     ] 
-   travel-to-stop
-   drop-off-passengers
-   pick-up-passengers
-   ]
+    travel-to-stop
+    drop-off-passengers
+    pick-up-passengers
+  ]
 
-      ;show buses_database
-  send-initial-message
-      ;show message_protocol ; debug
-      ;show bus_passengers?
-      
-      
- ;;; IF NEW BUS, SEND THIS ON THE FIRST TICK
- ; send-message (length graph) (list "request-all-claims" "please")             
+  send-initial-message    
 end
 
 
@@ -123,8 +119,8 @@ to read-inbox
     
     ;;;;; SCORES ;;;;;
     
-    ; If a request for score is received, calculate score and send this back if it's higher
-    if member? "request" item 2 ? [
+    ; If a request for score is received, calculate score and send this back if it's higher.
+    if member? "request-score" item 2 ? [
       let templist(item 2 ?)
       set target_stop item 1 item 1 templist ; Bus stop number sent by the requester
       let requested-score get-score target_stop
@@ -134,12 +130,12 @@ to read-inbox
       ;     show item 0 item 1 templist
       if (item 0 item 0 requested-score) > item 0 item 1 templist
       [ ; Compare newly calculated score with the score of the bus that asked for it
-        send-message (item 1 ?) (list "response" requested-score) ;Send a message back to the bus with the requested score
+        send-message (item 1 ?) (list "inform-score" requested-score) ;Send a message back to the bus with the requested score
       ]     
     ]
  
     ; If we received a response, another bus has a higher score, so go for second choice.
-    if member? "response" item 2 ? [
+    if member? "inform-score" item 2 ? [
       set second_choice true;
     ]
     ;;;;;;;;;;;;;;;;;;
@@ -156,41 +152,34 @@ to read-inbox
     ; If we receive a list of new claims, add them to existing claim list
     if member? "inform-new-claims" item 2 ? [
       let claims item 1 item 2 ?
-      foreach claims
-      [
+      foreach claims [
         set claimed_passengers lput ? claimed_passengers
       ]
     ]
 
     ; If we receive a request for all claims, send your list of claimed_passengers to the requester
-    if member? "request-all-claims" item 2 ? [
+    if member? "request-all-claims" item 2 ? [     
       send-message (item 1 ?) (list "inform-all-claims" claimed_passengers)    
-    ]
-
-    ; If we received a claim  
-    ;if member? "claim" item 2 ? [
-    ;  let claims item 1 item 2 ?
-    ;  foreach claims ; add to existing claim list
-    ;  [
-    ;    set claimed_passengers lput ? claimed_passengers
-    ;  ]
-    ;]
-    
+    ]    
     ;;;;;;;;;;;;;;;;;;
       
    
-   if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
-     set buses_count item 1 ? - length graph + 1  ; Updates buses_count
-   ]
+    ;;;;;;; META ;;;;;;
+    if item 1 ? - length graph + 1 > buses_count [ ; Check if message from new bus is received 
+      set buses_count item 1 ? - length graph + 1  ; Updates buses_count
+    ]
 
-   ifelse (item 1 ? - length graph + 1) > length(buses_database) [
-    set buses_database lput ? buses_database
-   ]
-   [
-   set buses_database replace-item (item 1 ? - length graph) buses_database ?
-   ]
+    ifelse (item 1 ? - length graph + 1) > length(buses_database) [
+      set buses_database lput ? buses_database
+    ]
+    [
+      set buses_database replace-item (item 1 ? - length graph) buses_database ?
+    ]
+    ;;;;;;;;;;;;;;;;;;
+    
   ]
-  set inbox []
+  set inbox [] ; Clear the inbox.
+
 end
 
 to request-score
@@ -211,7 +200,7 @@ to request-score
     let id 0
     while [ id < buses_count ] [   ; Send a request to all other buses 
       if (id + length graph) != bus_id [
-        send-message (id + length graph) (list "request" max_score)
+        send-message (id + length graph) (list "request-score" max_score)
         set wait_counter 1 ; Set a wait counter 
         ]
       set id id + 1   
