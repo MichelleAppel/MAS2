@@ -208,8 +208,8 @@ to set-next-stop
          if item 0 ? = max n-values length(score_list) [item 0 item ? score_list]
          [
            set next_stop item 1 ?
-           show "just set next stop (second_choice =false): "
-           show next_stop
+           ;show "just set next stop (second_choice =false): "
+           ;show next_stop
            set pick_up_passenger_group item 2 ?
          ]
        ]
@@ -367,8 +367,8 @@ to calculate-scores
       ]
     ]
     set score_list scores
-    show "Score_list: "
-    show score_list
+    ;show "Score_list: "
+    ;show score_list
   ]
 end
 
@@ -683,8 +683,20 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
     let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
     let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
     
-    let score_ ( 1 / cost_per_patch ) * ( ( 1 + drop_off_count ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / len_vs0s1 ) +
-                                          (     pickup_count   ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / len_vs0s1 ) )
+    let score_ ( 1 / cost_per_patch ) * ( ( 1 + drop_off_count ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / sqrt(len_vs0s1) ) +
+                                          (     pickup_count   ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / sqrt(len_vs0s1) ) )
+
+;    show ""
+;    show stop0_id
+;    show stop1_id
+;    
+;    show passenger_groups0
+;    show passenger_groups1
+;    
+;    show vs0s1
+;    show vs0r0
+;    show vs1r0
+;    show vs1r1
 
     report score_
     
