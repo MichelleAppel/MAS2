@@ -269,7 +269,7 @@ to pick-up-passengers
   [
     foreach get-passengers-at-stop current_stop
     [
-      if length bus_passengers < bus_type3_capacity ; If the bus is not full
+      if length bus_passengers < capacity ; If the bus is not full
       [
         if member? item 1 ? pick_up_passenger_group ; Pick up when in passenger group
         [
