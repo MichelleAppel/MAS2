@@ -415,7 +415,7 @@ to calculate-scores [ stops ]
         [
           let passenger_groups1_subset ? ; Subset of the passenger groups
 
-          let scorer1 score stop0_id stop1_id passenger_groups0 passenger_groups1_subset ; Compute score for passenger group subset
+          let scorer1 score stop0_id stop1_id passenger_groups0 passenger_groups1_subset previous_stop ; Compute score for passenger group subset
           
           set scoresr1 lput scorer1 scoresr1 ; Append score to score list for this stop
         ]
@@ -521,7 +521,7 @@ to-report score-tree-search [ stop0_id stop1_id passenger_groups0 passenger_grou
     [
       let passenger_group1_subset ?
       
-      let scorer1 score stop0_id stop1_id passenger_groups0 passenger_group1_subset
+      let scorer1 score stop0_id stop1_id passenger_groups0 passenger_group1_subset previous_stop
       
       set scoresr1 lput scorer1 scoresr1 ; Add score to list
     ]  
@@ -612,7 +612,7 @@ end
 ; Passenger_groups0 : The passenger groups on board of the bus [ [destination_id group_size] [destination_id group_size] ... ]
 ; Passenger_groups1 : The passenger groups to be picked up     [ [destination_id group_size] [destination_id group_size] ... ]
 
-to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
+to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous_stop_id ]
   ifelse stop0_id != -1 and stop1_id != -1 ; Make sure stop0 and stop1 are valid stop ids
   [
     let s0 ( list item stop0_id xs item stop0_id ys ) ; Current stop coordinates s0
@@ -759,8 +759,15 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 ]
     let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
     let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
     
-    let score_ ( 1 / cost_per_patch ) * ( ( 1 + drop_off_count ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / sqrt(len_vs0s1) ) +
-                                          (     pickup_count   ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / sqrt(len_vs0s1) ) )
+    let pendelty 0
+    
+    if previous_stop_id = stop1_id
+    [
+      set pendelty 1
+    ]
+    
+    let score_ ( 1 / cost_per_patch ) * ( ( ( 1 + drop_off_count ) / ( 1 + pendelty ) ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / sqrt(len_vs0s1) ) +
+                                          (       pickup_count                        ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / sqrt(len_vs0s1) ) )
 
 
 
