@@ -34,6 +34,19 @@ buses-own [
   claimed_passengers ; List of claimed passenger_ids.
   
   power-set-threshold ; Threshold for score calculation: if lower than threshold, take power-set; else, do heuristic tree search.
+  
+  init_buses_count ; Amount of buses to be added at the beginning of simulation (added every 10 ticks).
+  
+  vote_tick_interval ; Interval (in ticks) for holding votes. Init: 10. 
+                     ; However, when the previous vote was to add a bus, decrease tick interval by one.
+                     ; When the previous vote was not to add a bus, increase tick interval by one. 
+                     ; This way, at busy moment, votings are held more often to increase performance.
+  
+  votes ; Amount of buses that vote for a new bus; updated every vote_tick_interval ticks.
+  
+  current_capacity_fill      ; Percentage of bus capacity that is currently filled with passengers.
+  weighted_avg_capacity_fill ; Average percentage of bus capacity that is filled with passengers, 
+                             ; weighted in terms of time: current measure weighs 25%, past (set of) measures weigh 75%; measured every tick.
 ]
  
 globals [graph]
@@ -41,15 +54,11 @@ globals [graph]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Initialize agents and variables  
 to init-buses
-
-  set claimed_passengers []
-  set power-set-threshold 7 ; Set threshold for calculating score (lower than 7 = power-set).
-    
+  init-meta-variables
+  init-local-variables
   set-cost-per-patch
   set-bus-capacity
-  set wait_counter 0
-  set second_choice false
-  
+    
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
     
@@ -58,18 +67,19 @@ to init-buses
   set buses_database n-values buses_count [[]]
   calculate-scores item current_stop graph ; Calculate score for connected bus stops.
   set-next-stop ; Determine next bus stop (highest score).
-  
-  set maximum-score-busstop []  
 end 
 
 ; Add decision making strategies for your agents here.
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions
   
+  ; Calculate current and new weigthed average capacity fill.
+  set current_capacity_fill length bus_passengers / capacity
+  set weighted_avg_capacity_fill 0.75 * weighted_avg_capacity_fill + 0.25 * current_capacity_fill
+      
   ; TODO: Optimize this if-statement (needs to be more specific, but next_stop = -1 does not work).
   ; If this bus is new (and not the first bus), request all claims from the first bus.
-  if previous_stop = -1
-  [
+  if previous_stop = -1 [
     send-message (length graph) (list "request-all-claims" "please")
   ] 
   
@@ -93,8 +103,72 @@ to execute-actions
   ]
 
   send-initial-message
+  
+  ; Every 10 ticks, add a bus of type 3 until the init_buses_count is reached.
+  if ticks mod 10 = 0 and buses_count < init_buses_count [
+    add-bus 3
+  ]
+
+  ; After the init_buses_count is reached, every 10 ticks a voting will take place.
+  ; In this voting, each bus can vote for adding or not adding a bus held by the first bus. 
+  if ticks > init_buses_count * 10 and ticks mod vote_tick_interval = 0 [
+    voting
+  ]
+  
+  ;if ticks > init_buses_count * 10 and ticks + 1 mod vote_tick_interval = 0 and
+  if bus_id = length graph and votes > 0 [
+    ifelse votes / buses_count > 0.5 [
+      write "ADD BUS!"
+      set vote_tick_interval vote_tick_interval - 1
+      add-bus 1
+    ]
+    [
+      set vote_tick_interval vote_tick_interval + 1
+    ]
+    set votes 0
+  ]
+  
 end
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Init ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Initialize meta variables.
+to init-meta-variables
+  set init_buses_count 10
+  set vote_tick_interval 10
+  set power-set-threshold 7
+end
+
+; Initialize local variables for the current bus.
+to init-local-variables
+  set claimed_passengers []
+  set votes 0
+  set weighted_avg_capacity_fill 0
+  set wait_counter 0
+  set second_choice false
+  set maximum-score-busstop []  
+end
+
+; Set the travelling cost per patch of the current bus
+to set-cost-per-patch
+  if bus_type = 1
+  [set cost_per_patch bus_type1_cost_per_patch]
+  if bus_type = 2
+  [set cost_per_patch bus_type2_cost_per_patch]
+  if bus_type = 3
+  [set cost_per_patch bus_type3_cost_per_patch]
+end
+
+; Set the passenger capacity of the current bus
+to set-bus-capacity
+  if bus_type = 1
+  [set capacity bus_type1_capacity]
+  if bus_type = 2
+  [set capacity bus_type2_capacity]
+  if bus_type = 3
+  [set capacity bus_type3_capacity]
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Inbox ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Creates the message to be sent
@@ -165,6 +239,15 @@ to read-inbox
       send-message (item 1 ?) (list "inform-all-claims" claimed_passengers)    
     ]    
     ;;;;;;;;;;;;;;;;;;
+    
+    ; If we received a response, another bus has a higher score, so go for second choice.
+    if member? "inform-vote" item 2 ? [
+      let vote item 1 item 2 ?
+      if vote = "add-bus"
+      [
+        set votes votes + 1 
+      ]
+    ]
       
    
     ;;;;;;; META ;;;;;;
@@ -382,29 +465,6 @@ to calculate-scores [ stops ]
     ;show score_list
   ]
 end
-
-
-
-; Set the travelling cost per patch of the current bus
-to set-cost-per-patch
-  if bus_type = 1
-  [set cost_per_patch bus_type1_cost_per_patch]
-  if bus_type = 2
-  [set cost_per_patch bus_type2_cost_per_patch]
-  if bus_type = 3
-  [set cost_per_patch bus_type3_cost_per_patch]
-end
-
-; Set the passenger capacity of the current bus
-to set-bus-capacity
-  if bus_type = 1
-  [set capacity bus_type1_capacity]
-  if bus_type = 2
-  [set capacity bus_type2_capacity]
-  if bus_type = 3
-  [set capacity bus_type3_capacity]
-end
-
 
 ; Calculate the power set of a list of passenger-groups, containg integers ranging from 0-23
 to-report calculate-power-set [ passenger-groups ]
@@ -811,3 +871,16 @@ to-report get-score [s1_id]
   [report [[0 0 [0]]]] ; if no possible connection, report 0
 end
 
+to voting
+  ; First determine the vote, "yes" for adding a bus, "no" for not adding a bus and send to the first bus.
+  ;let num random-float 1 ; Random number between 0 and 1 (for testing).
+  let num weighted_avg_capacity_fill
+
+  ifelse num > 0.5
+  [
+    send-message (length graph) (list "inform-vote" "add-bus")
+  ]
+  [
+    send-message (length graph) (list "inform-vote" "no-new-bus")
+  ]
+end
