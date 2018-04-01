@@ -1,4 +1,6 @@
 ; TODO: improve score function: weights of r0 should be inversely proportional to the distance s0r0
+; TODO: add comment/description to every method, important step, and/or (important) variable
+
 extensions[matrix]
 
 buses-own [
@@ -70,12 +72,12 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions
   
-  if ticks mod 60 = 0
-  [
-  clear-claimlist 
+  ; Every 200 ticks, clear the claimed passengers that are already picked up (to prevent the list from becoming too large).
+  if ticks mod 250 = 0 [
+    clear-claimlist 
   ]
   
-  ; Calculate current and new weigthed average capacity fill.
+  ; Calculate current and new weighted average capacity fill.
   set current_capacity_fill length bus_passengers / capacity
   set weighted_avg_capacity_fill 0.75 * weighted_avg_capacity_fill + 0.25 * current_capacity_fill
       
@@ -85,8 +87,6 @@ to execute-actions
     send-message (length graph) (list "request-all-claims" "please")
   ] 
 
-
-  
   read-inbox
   
   ifelse wait_counter > 0
@@ -113,7 +113,8 @@ to execute-actions
     
   ]
 
-  send-initial-message
+  ; TODO: is this necessary???
+  ;send-initial-message
   
   ; Every 10 ticks, add a bus of type 3 until the init_buses_count is reached.
   if ticks mod 10 = 0 and buses_count < init_buses_count [
@@ -123,20 +124,12 @@ to execute-actions
   ; After the init_buses_count is reached, every 10 ticks a voting will take place.
   ; In this voting, each bus can vote for adding or not adding a bus held by the first bus. 
   if ticks > init_buses_count * 10 and ticks mod vote_tick_interval = 0 [
-    voting
+    send-vote
   ]
   
-  ;if ticks > init_buses_count * 10 and ticks + 1 mod vote_tick_interval = 0 and
-  if bus_id = length graph and votes > 0 [
-    ifelse votes / buses_count > 0.5 [
-      write "ADD BUS!"
-      set vote_tick_interval vote_tick_interval - 1
-      add-bus 1
-    ]
-    [
-      set vote_tick_interval vote_tick_interval + 1
-    ]
-    set votes 0
+  ; Let the first bus manage the votes and decide to add a bus or not.
+  if bus_id = length graph and votes > 1 [
+    manage-votes
   ]
   
 end
@@ -231,8 +224,7 @@ to read-inbox
     ; If we receive a list of all claims, update claimed_passengers
     if member? "inform-all-claims" item 2 ? [
       let claims item 1 item 2 ?
-      foreach claims
-      [
+      foreach claims [
         set claimed_passengers lput ? claimed_passengers
       ]
     ]
@@ -254,8 +246,7 @@ to read-inbox
     ; If we received a response, another bus has a higher score, so go for second choice.
     if member? "inform-vote" item 2 ? [
       let vote item 1 item 2 ?
-      if vote = "add-bus"
-      [
+      if vote = "add-bus" [
         set votes votes + 1 
       ]
     ]
@@ -877,6 +868,8 @@ to-report filter-passenger-groups [ busstop passenger_groups ]
 end
 
 to clear-claimlist
+  write "Clearing claimlist of bus"
+  show bus_id
   let cleared_claimlist []
   
   foreach passengers
@@ -905,16 +898,35 @@ to-report get-score [s1_id]
   [report [[0 0 [0]]]] ; if no possible connection, report 0
 end
 
-to voting
-  ; First determine the vote, "yes" for adding a bus, "no" for not adding a bus and send to the first bus.
-  ;let num random-float 1 ; Random number between 0 and 1 (for testing).
+to send-vote
+  ; Determine the vote, 'add-bus' or 'no-new-bus', and send to the first bus (the vote counter).
   let num weighted_avg_capacity_fill
-
-  ifelse num > 0.5
+  
+  ifelse num > 0.49
   [
     send-message (length graph) (list "inform-vote" "add-bus")
   ]
   [
     send-message (length graph) (list "inform-vote" "no-new-bus")
   ]
+end
+
+to manage-votes
+  ; Add your own preference (for the first bus).
+  let num weighted_avg_capacity_fill
+  if num > 0.49 [
+    set votes votes + 1
+  ] 
+
+  ifelse votes / buses_count > 0.49 [
+    write "ADD BUS!"
+    ; If the decision is to add a bus, it is probably busy. Thus, set vote_tick_interval to 6.
+    set vote_tick_interval 6
+    add-bus 2
+  ]
+  [
+    ; If the decision is not to add a bus, it is probably not busy. Thus, set vote_tick_interval to 12.
+    set vote_tick_interval 12
+  ]
+  set votes 0 ; Set to zero for the next voting.
 end
