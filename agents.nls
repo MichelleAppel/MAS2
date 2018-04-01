@@ -1,6 +1,3 @@
-; TODO: improve score function: weights of r0 should be inversely proportional to the distance s0r0
-; TODO: add comment/description to every method, important step, and/or (important) variable
-
 extensions[matrix]
 
 buses-own [
@@ -23,8 +20,8 @@ buses-own [
   buses_count        ; The amount of buses that exist in the simulation.
   message_protocol   ; The variable that is going to contain the message.
   score_list         ; List that contains scores for every bus stop.
-  buses_database     ; TODO: add variable description.
-  max_score          ; TODO: add variable description.
+  buses_database     ; Database with all received information about other buses
+  max_score          ; The highest score out of all bus stops and passenger combinations
   wait_counter       ; Simple shared tick counter used between functions.
   maximum-score-busstop ; The maximum score and the next busstop, which will be sent to all buses.
   pick_up_passenger_group ; The passenger groups that the bus is going to pick up.
@@ -81,7 +78,7 @@ to execute-actions
   set current_capacity_fill length bus_passengers / capacity
   set weighted_avg_capacity_fill 0.75 * weighted_avg_capacity_fill + 0.25 * current_capacity_fill
       
-  ; TODO: Optimize this if-statement (needs to be more specific, but next_stop = -1 does not work).
+
   ; If this bus is new (and not the first bus), request all claims from the first bus.
   if previous_stop = -1 [
     send-message (length graph) (list "request-all-claims" "please")
@@ -136,7 +133,7 @@ end
 
 ; Initialize meta variables.
 to init-meta-variables
-  set init_buses_count 15
+  set init_buses_count 20
   set vote_tick_interval 12
   set power-set-threshold 3
 end
