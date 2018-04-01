@@ -95,7 +95,7 @@ to execute-actions
   ]
   [
     let available_seats capacity - length bus_passengers
-    if current_stop != -1 and ( ticks mod 15 = 0 or available_seats = 0); If the bus is at a bus stop
+    if current_stop != -1 and ( ticks mod 15 = 0 or available_seats < capacity * 0.2); If the bus is at a bus stop
     [     
       calculate-scores item current_stop graph
       request-score
