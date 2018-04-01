@@ -84,22 +84,28 @@ to execute-actions
   ] 
   
   read-inbox
-   
-  ifelse wait_counter > 0 
+  
+  ifelse wait_counter > 0
   [
     set wait_counter wait_counter - 1  
   ]
   [
-    if current_stop != -1 ; If the bus is at a bus stop
+    if current_stop != -1 and ticks mod 15 = 0; If the bus is at a bus stop
     [     
       calculate-scores item current_stop graph
       request-score
       set-next-stop
       communicate-claim
-    ] 
-    travel-to-stop
+    ]
+    
+    if next_stop != -1
+    [
+      travel-to-stop
+    ]
+    
     drop-off-passengers
     pick-up-passengers
+    
   ]
 
   send-initial-message
