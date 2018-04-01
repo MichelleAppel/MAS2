@@ -27,9 +27,6 @@ buses-own [
   maximum-score-busstop ; The maximum score and the next busstop, which will be sent to all buses.
   pick_up_passenger_group ; The passenger groups that the bus is going to pick up.
   second_choice   ; Boolean indicating to go for the first or second choice.
-
-  tree-score     ; Ugly variables because netlogo doesn't allow recursive report functions rip.
-  tree-group     ; TODO: add variable description.
   
   claimed_passengers ; List of claimed passenger_ids.
   
@@ -73,6 +70,8 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions
   
+  clear-claimlist
+    
   ; Calculate current and new weigthed average capacity fill.
   set current_capacity_fill length bus_passengers / capacity
   set weighted_avg_capacity_fill 0.75 * weighted_avg_capacity_fill + 0.25 * current_capacity_fill
@@ -82,6 +81,8 @@ to execute-actions
   if previous_stop = -1 [
     send-message (length graph) (list "request-all-claims" "please")
   ] 
+
+
   
   read-inbox
   
@@ -868,6 +869,21 @@ to-report filter-passenger-groups [ busstop passenger_groups ]
   [
     report passenger_groups ; return original list
   ]
+end
+
+to clear-claimlist
+  let cleared_claimlist []
+  
+  foreach passengers
+  [
+    let passenger_id item 0 ?
+    if member? passenger_id claimed_passengers
+    [
+      set cleared_claimlist lput passenger_id cleared_claimlist
+    ]
+  ]
+  
+  set claimed_passengers cleared_claimlist
 end
 
 ; get maximum score for a certain bus stop
