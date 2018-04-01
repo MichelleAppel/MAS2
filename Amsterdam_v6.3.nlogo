@@ -247,10 +247,6 @@ to go
       ask buses [
         execute-actions
       ]
-      if ticks mod 10 = 0 and count turtles with [breed = buses] < 1; Every 10 ticks add a bus until there are 60
-      [
-        add-bus 3
-      ]
       add-buses
     ]
   ]
@@ -776,8 +772,8 @@ end
 GRAPHICS-WINDOW
 21
 12
-1097
-849
+1123
+875
 -1
 -1
 26.0
@@ -791,9 +787,9 @@ GRAPHICS-WINDOW
 0
 1
 0
-40
+41
 0
-30
+31
 0
 0
 1

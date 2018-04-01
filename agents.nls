@@ -777,9 +777,11 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous
       set pendelty 1
     ]
     
+    
+    
     let score_ ( 1 / cost_per_patch ) * ( ( ( 1 + drop_off_count ) / ( 1 + pendelty ) ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / sqrt(len_vs0s1) ) +
                                           (       pickup_count                        ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / sqrt(len_vs0s1) ) )
-
+   
 
     report score_
     
