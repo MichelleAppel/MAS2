@@ -71,9 +71,9 @@ end
 ; Add decision making strategies for your agents here.
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions
-  
-  ; Every 200 ticks, clear the claimed passengers that are already picked up (to prevent the list from becoming too large).
-  if ticks mod 250 = 0 [
+    
+  ; Every 50 ticks, clear the claimed passengers that are already picked up (to prevent the list from becoming too large).
+  if ticks mod 50 = 0 and bus_id = length graph [
     clear-claimlist 
   ]
   
@@ -113,9 +113,6 @@ to execute-actions
     
   ]
 
-  ; TODO: is this necessary???
-  ;send-initial-message
-  
   ; Every 10 ticks, add a bus of type 3 until the init_buses_count is reached.
   if ticks mod 10 = 0 and buses_count < init_buses_count [
     add-bus 3
@@ -139,9 +136,9 @@ end
 
 ; Initialize meta variables.
 to init-meta-variables
-  set init_buses_count 10
-  set vote_tick_interval 10
-  set power-set-threshold 7
+  set init_buses_count 15
+  set vote_tick_interval 12
+  set power-set-threshold 3
 end
 
 ; Initialize local variables for the current bus.
@@ -229,6 +226,14 @@ to read-inbox
       ]
     ]
 
+    ; If we receive a list of all cleared claims, update claimed_passengers
+    if member? "inform-cleared-claims" item 2 ? [
+      let claims item 1 item 2 ?
+      foreach claims [
+        set claimed_passengers lput ? claimed_passengers
+      ]
+    ]
+    
     ; If we receive a list of new claims, add them to existing claim list
     if member? "inform-new-claims" item 2 ? [
       let claims item 1 item 2 ?
@@ -241,6 +246,7 @@ to read-inbox
     if member? "request-all-claims" item 2 ? [     
       send-message (item 1 ?) (list "inform-all-claims" claimed_passengers)    
     ]    
+    
     ;;;;;;;;;;;;;;;;;;
     
     ; If we received a response, another bus has a higher score, so go for second choice.
@@ -868,8 +874,6 @@ to-report filter-passenger-groups [ busstop passenger_groups ]
 end
 
 to clear-claimlist
-  write "Clearing claimlist of bus"
-  show bus_id
   let cleared_claimlist []
   
   foreach passengers
@@ -882,6 +886,13 @@ to clear-claimlist
   ]
   
   set claimed_passengers cleared_claimlist
+   
+  ; Send cleared claimlist to all other buses.
+  let id length graph 
+  while [ id < bus_id ] [
+   send-message id (list "inform-cleared-claims" claimed_passengers) 
+   set id id + 1
+  ]
 end
 
 ; get maximum score for a certain bus stop
@@ -922,7 +933,7 @@ to manage-votes
     write "ADD BUS!"
     ; If the decision is to add a bus, it is probably busy. Thus, set vote_tick_interval to 6.
     set vote_tick_interval 6
-    add-bus 2
+    add-bus 3
   ]
   [
     ; If the decision is not to add a bus, it is probably not busy. Thus, set vote_tick_interval to 12.
