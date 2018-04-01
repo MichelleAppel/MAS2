@@ -70,8 +70,11 @@ end
 ; You are allowed to use the global variable 'ticks'.
 to execute-actions
   
-  clear-claimlist
-    
+  if ticks mod 60 = 0
+  [
+  clear-claimlist 
+  ]
+  
   ; Calculate current and new weigthed average capacity fill.
   set current_capacity_fill length bus_passengers / capacity
   set weighted_avg_capacity_fill 0.75 * weighted_avg_capacity_fill + 0.25 * current_capacity_fill
@@ -91,7 +94,8 @@ to execute-actions
     set wait_counter wait_counter - 1  
   ]
   [
-    if current_stop != -1 and ticks mod 15 = 0; If the bus is at a bus stop
+    let available_seats capacity - length bus_passengers
+    if current_stop != -1 and ( ticks mod 15 = 0 or available_seats = 0); If the bus is at a bus stop
     [     
       calculate-scores item current_stop graph
       request-score
@@ -766,8 +770,8 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous
     let len_vs0r0 sqrt( (item 0 vs0r0) ^ 2 + (item 1 vs0r0) ^ 2 ) + 1
     let len_vs1r0 sqrt( (item 0 vs1r0) ^ 2 + (item 1 vs1r0) ^ 2 ) + 1
     
-    let pendelty 0
     
+    let pendelty 0
     if previous_stop_id = stop1_id
     [
       set pendelty 1
@@ -775,7 +779,6 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous
     
     let score_ ( 1 / cost_per_patch ) * ( ( ( 1 + drop_off_count ) / ( 1 + pendelty ) ) * ( exp( vs0s1*vs0r0 / len_vs0s1 ^ 2 ) / sqrt(len_vs0s1) ) +
                                           (       pickup_count                        ) * ( exp( vs1r0*vs1r1 / len_vs1r1 ^ 2 ) / sqrt(len_vs0s1) ) )
-
 
 
     report score_
