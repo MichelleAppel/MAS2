@@ -136,7 +136,7 @@ end
 
 ; Initialize meta variables.
 to init-meta-variables
-  set init_buses_count 15
+  set init_buses_count 10
   set vote_tick_interval 12
   set power-set-threshold 3
 end
