@@ -38,6 +38,8 @@ globals [
   leasing_list
   average_travelling_time_remaining
   final_average_travelling_time
+  xs
+  ys
 ]
 
 to setup
@@ -49,7 +51,7 @@ to setup
   get-daily-ridership-schedule
   update-bus-stops
   setup-costs
-  add-bus 1
+  add-bus 3
 end
 
 to calculate-average-travelling-time
@@ -159,8 +161,8 @@ to create-bus-stops
     "Leidseplein" "Lelylaan" "Muiderpoort" "Museumplein" "RAI" "SciencePark" "Sloterdijk"
     "Surinameplein" "UvA" "VU" "Waterlooplein" "Weesperplein" "Wibautstraat" "Zuid"]
 
-  let xs [27 11 31 22 21 11 25 11 26 25 17 4 31 17 19 35 6 10 38 14 23 24 25 15]
-  let ys [7 4 30 21 18 18 30 9 24 18 14 12 13 11 3 10 26 13 11 1 16 13 11 4]
+  set xs [27 11 31 22 21 11 25 11 26 25 17 4 31 17 19 35 6 10 38 14 23 24 25 15]
+  set ys [7 4 30 21 18 18 30 9 24 18 14 12 13 11 3 10 26 13 11 1 16 13 11 4]
 
   foreach amsterdam_bus_stops_names [
     create-bus_stops 1 [
@@ -770,8 +772,8 @@ end
 GRAPHICS-WINDOW
 21
 12
-1097
-849
+1123
+875
 -1
 -1
 26.0
@@ -785,9 +787,9 @@ GRAPHICS-WINDOW
 0
 1
 0
-40
+41
 0
-30
+31
 0
 0
 1

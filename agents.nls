@@ -26,9 +26,7 @@ buses-own [
   maximum-score-busstop ; The maximum score and the next busstop, which will be sent to all buses.
   pick_up_passenger_group ; The passenger groups that the bus is going to pick up.
   second_choice   ; Boolean indicating to go for the first or second choice.
-  xs1                ; X coordinate of bus stops
-  ys1                ; Y coordinate of bus stops
-     
+  
   claimed_passengers ; List of claimed passenger_ids.
   
   power-set-threshold ; Threshold for score calculation: if lower than threshold, take power-set; else, do heuristic tree search.
@@ -45,8 +43,8 @@ buses-own [
   current_capacity_fill      ; Percentage of bus capacity that is currently filled with passengers.
   weighted_avg_capacity_fill ; Average percentage of bus capacity that is filled with passengers, 
                              ; weighted in terms of time: current measure weighs 25%, past (set of) measures weigh 75%; measured every tick.
-  
 ]
+ 
 globals [graph]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Initialize and perform actions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -59,10 +57,7 @@ to init-buses
     
   ; This list contains the topology of the entire network of bus stops, which is known to all agents. You can use this, for instance, to calculate the shortest path between two bus stops.
   set graph [[22 15 14] [11 19 23 7] [8] [16 4 20 9] [3 5 10] [4 16 10 17] [8] [1 17 13] [2 6 9] [3 8 20] [4 5 17 13 21] [1 16 17] [20 15 22] [7 10 22 23] [0 23] [0 12 18] [3 5 11] [5 7 10 11] [15] [1 23] [3 9 12 21] [10 20 22] [0 12 13 21] [1 13 14 19]]
-  set xs1 [27 11 31 22 21 11 25 11 26 25 17 4 31 17 19 35 6 10 38 14 23 24 25 15]
-  set ys1 [7 4 30 21 18 18 30 9 24 18 14 12 13 11 3 10 26 13 11 1 16 13 11 4] 
-  
-  
+    
   set buses_count bus_id - length graph + 1 ; Set current amount of buses.
   send-initial-message ; Send message to all other existing buses to let know that a new bus exists.
   set buses_database n-values buses_count [[]]
@@ -629,7 +624,7 @@ end
 to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous_stop_id ]
   ifelse stop0_id != -1 and stop1_id != -1 ; Make sure stop0 and stop1 are valid stop ids
   [
-    let s0 ( list item stop0_id xs1 item stop0_id ys1 ) ; Current stop coordinates s0
+    let s0 ( list item stop0_id xs item stop0_id ys ) ; Current stop coordinates s0
     
     ; Estimated route vector r0 (weighted average of destination of passengers on board)
     let r0  ( list 0 0 )       ; Initialize r0 vector    
@@ -647,8 +642,8 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous
         let destination_id item 0 passenger_group0 ; The destination of the passenger group
         let group_size     item 1 passenger_group0 ; The group size
         
-        let xw item destination_id xs1 ; x coordinate of the destination bus stop
-        let yw item destination_id ys1 ; y coordinate of the destination bus stop
+        let xw item destination_id xs ; x coordinate of the destination bus stop
+        let yw item destination_id ys ; y coordinate of the destination bus stop
                 
         ; origin vectors
         let xo ( xw - item 0 s0 )
@@ -681,7 +676,7 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous
     ]
      
     
-    let s1 ( list item stop1_id xs1 item stop1_id ys1 ) ; Next stop coordinates s1
+    let s1 ( list item stop1_id xs item stop1_id ys ) ; Next stop coordinates s1
     
     ; Estimated route vector r1 (weighted average of destination of passengers on board)
     let r1  ( list 0 0 )        ; Initialize r1 vector
@@ -697,8 +692,8 @@ to-report score [ stop0_id stop1_id passenger_groups0 passenger_groups1 previous
         let destination_id item 0 passenger_group1 ; The destination of the passenger group
         let group_size     item 1 passenger_group1 ; The group size
         
-        let xw item destination_id xs1 ; x coordinate of the destination bus stop times the amount of passengers
-        let yw item destination_id ys1 ; y coordinate of the destination bus stop times the amount of passengers
+        let xw item destination_id xs ; x coordinate of the destination bus stop times the amount of passengers
+        let yw item destination_id ys ; y coordinate of the destination bus stop times the amount of passengers
         
         ; origin vectors
         let xo ( xw - item 0 s1 )
